@@ -10,7 +10,10 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-# Persist the session + sent-state across restarts when a volume is mounted here.
 ENV TICK_INTERVAL_SECONDS=60
+# No persistent volume on this deploy, so keep the resend window short: a match
+# is only eligible for 20 min after kickoff. Picks reveal at kickoff, so that's
+# ample, and a restart >20 min later won't re-post. Override via env if desired.
+ENV SEND_WINDOW_MINUTES=20
 
 CMD ["node", "src/worker.js"]

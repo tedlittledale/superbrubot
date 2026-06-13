@@ -58,14 +58,16 @@ every minute, so Railway just needs to run the container.
 2. **Set environment variables** (Service → *Variables*):
    - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
    - `SUPERBRU_EMAIL`, `SUPERBRU_PASSWORD`
-   - `STATE_DIR=/data`  ← so the session + sent-record persist
-3. **Add a volume** (Service → *Settings* → *Volumes*): mount path `/data`.
-   This keeps `data/fixtures.json` (baked into the image at `/app/data`) separate from
-   the persisted state at `/data`, so restarts don't resend matches.
-4. **Deploy.** Logs should show `Superbru worker started — ticking every 60s.` and
+3. **Deploy.** Logs should show `Superbru worker started — ticking every 60s.` and
    `nothing due` until a match kicks off.
 
 No public networking / domain is needed — it's a background worker, not a web service.
+
+> **No volume on this deploy.** State is in-memory, so the Dockerfile sets
+> `SEND_WINDOW_MINUTES=20` — a match is only eligible for 20 min after kickoff, so a
+> container restart more than 20 min later won't re-post it. If you'd rather persist
+> state and use the longer default window, attach a volume at `/data` and set
+> `STATE_DIR=/data` (via ⌘K → "volume", or right-click the project canvas).
 
 ## Deploy on a VPS
 
