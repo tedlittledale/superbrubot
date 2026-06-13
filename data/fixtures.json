@@ -1,0 +1,514 @@
+[
+  {
+    "game": 5,
+    "home": "QAT",
+    "away": "SUI",
+    "homeName": "Qatar",
+    "awayName": "Switzerland",
+    "kickoffUtc": "2026-06-13T19:00:00.000Z"
+  },
+  {
+    "game": 6,
+    "home": "BRA",
+    "away": "MOR",
+    "homeName": "Brazil",
+    "awayName": "Morocco",
+    "kickoffUtc": "2026-06-13T22:00:00.000Z"
+  },
+  {
+    "game": 7,
+    "home": "HAI",
+    "away": "SCO",
+    "homeName": "Haiti",
+    "awayName": "Scotland",
+    "kickoffUtc": "2026-06-14T01:00:00.000Z"
+  },
+  {
+    "game": 8,
+    "home": "AUS",
+    "away": "TUR",
+    "homeName": "Australia",
+    "awayName": "Turkey",
+    "kickoffUtc": "2026-06-14T04:00:00.000Z"
+  },
+  {
+    "game": 9,
+    "home": "GER",
+    "away": "CUR",
+    "homeName": "Germany",
+    "awayName": "Curacao",
+    "kickoffUtc": "2026-06-14T17:00:00.000Z"
+  },
+  {
+    "game": 10,
+    "home": "NED",
+    "away": "JPN",
+    "homeName": "Netherlands",
+    "awayName": "Japan",
+    "kickoffUtc": "2026-06-14T20:00:00.000Z"
+  },
+  {
+    "game": 11,
+    "home": "CIV",
+    "away": "ECU",
+    "homeName": "Ivory Coast",
+    "awayName": "Ecuador",
+    "kickoffUtc": "2026-06-14T23:00:00.000Z"
+  },
+  {
+    "game": 12,
+    "home": "SWE",
+    "away": "TUN",
+    "homeName": "Sweden",
+    "awayName": "Tunisia",
+    "kickoffUtc": "2026-06-15T02:00:00.000Z"
+  },
+  {
+    "game": 13,
+    "home": "ESP",
+    "away": "CPV",
+    "homeName": "Spain",
+    "awayName": "Cape Verde",
+    "kickoffUtc": "2026-06-15T16:00:00.000Z"
+  },
+  {
+    "game": 14,
+    "home": "BEL",
+    "away": "EGY",
+    "homeName": "Belgium",
+    "awayName": "Egypt",
+    "kickoffUtc": "2026-06-15T19:00:00.000Z"
+  },
+  {
+    "game": 15,
+    "home": "KSA",
+    "away": "URU",
+    "homeName": "Saudi Arabia",
+    "awayName": "Uruguay",
+    "kickoffUtc": "2026-06-15T22:00:00.000Z"
+  },
+  {
+    "game": 16,
+    "home": "IRN",
+    "away": "NZL",
+    "homeName": "Iran",
+    "awayName": "New Zealand",
+    "kickoffUtc": "2026-06-16T01:00:00.000Z"
+  },
+  {
+    "game": 17,
+    "home": "FRA",
+    "away": "SEN",
+    "homeName": "France",
+    "awayName": "Senegal",
+    "kickoffUtc": "2026-06-16T19:00:00.000Z"
+  },
+  {
+    "game": 18,
+    "home": "IRQ",
+    "away": "NOR",
+    "homeName": "Iraq",
+    "awayName": "Norway",
+    "kickoffUtc": "2026-06-16T22:00:00.000Z"
+  },
+  {
+    "game": 19,
+    "home": "ARG",
+    "away": "ALG",
+    "homeName": "Argentina",
+    "awayName": "Algeria",
+    "kickoffUtc": "2026-06-17T01:00:00.000Z"
+  },
+  {
+    "game": 20,
+    "home": "AUT",
+    "away": "JOR",
+    "homeName": "Austria",
+    "awayName": "Jordan",
+    "kickoffUtc": "2026-06-17T04:00:00.000Z"
+  },
+  {
+    "game": 21,
+    "home": "POR",
+    "away": "DRC",
+    "homeName": "Portugal",
+    "awayName": "DR Congo",
+    "kickoffUtc": "2026-06-17T17:00:00.000Z"
+  },
+  {
+    "game": 22,
+    "home": "ENG",
+    "away": "CRO",
+    "homeName": "England",
+    "awayName": "Croatia",
+    "kickoffUtc": "2026-06-17T20:00:00.000Z"
+  },
+  {
+    "game": 23,
+    "home": "GHA",
+    "away": "PAN",
+    "homeName": "Ghana",
+    "awayName": "Panama",
+    "kickoffUtc": "2026-06-17T23:00:00.000Z"
+  },
+  {
+    "game": 24,
+    "home": "UZB",
+    "away": "COL",
+    "homeName": "Uzbekistan",
+    "awayName": "Colombia",
+    "kickoffUtc": "2026-06-18T02:00:00.000Z"
+  },
+  {
+    "game": 25,
+    "home": "CZE",
+    "away": "RSA",
+    "homeName": "Czech Republic",
+    "awayName": "South Africa",
+    "kickoffUtc": "2026-06-18T16:00:00.000Z"
+  },
+  {
+    "game": 26,
+    "home": "SUI",
+    "away": "BHI",
+    "homeName": "Switzerland",
+    "awayName": "Bosnia & Herzegovina",
+    "kickoffUtc": "2026-06-18T19:00:00.000Z"
+  },
+  {
+    "game": 27,
+    "home": "CAN",
+    "away": "QAT",
+    "homeName": "Canada",
+    "awayName": "Qatar",
+    "kickoffUtc": "2026-06-18T22:00:00.000Z"
+  },
+  {
+    "game": 28,
+    "home": "MEX",
+    "away": "KOR",
+    "homeName": "Mexico",
+    "awayName": "South Korea",
+    "kickoffUtc": "2026-06-19T01:00:00.000Z"
+  },
+  {
+    "game": 29,
+    "home": "USA",
+    "away": "AUS",
+    "homeName": "USA",
+    "awayName": "Australia",
+    "kickoffUtc": "2026-06-19T19:00:00.000Z"
+  },
+  {
+    "game": 30,
+    "home": "SCO",
+    "away": "MOR",
+    "homeName": "Scotland",
+    "awayName": "Morocco",
+    "kickoffUtc": "2026-06-19T22:00:00.000Z"
+  },
+  {
+    "game": 31,
+    "home": "BRA",
+    "away": "HAI",
+    "homeName": "Brazil",
+    "awayName": "Haiti",
+    "kickoffUtc": "2026-06-20T00:30:00.000Z"
+  },
+  {
+    "game": 32,
+    "home": "TUR",
+    "away": "PAR",
+    "homeName": "Turkey",
+    "awayName": "Paraguay",
+    "kickoffUtc": "2026-06-20T03:00:00.000Z"
+  },
+  {
+    "game": 33,
+    "home": "NED",
+    "away": "SWE",
+    "homeName": "Netherlands",
+    "awayName": "Sweden",
+    "kickoffUtc": "2026-06-20T17:00:00.000Z"
+  },
+  {
+    "game": 34,
+    "home": "GER",
+    "away": "CIV",
+    "homeName": "Germany",
+    "awayName": "Ivory Coast",
+    "kickoffUtc": "2026-06-20T20:00:00.000Z"
+  },
+  {
+    "game": 35,
+    "home": "ECU",
+    "away": "CUR",
+    "homeName": "Ecuador",
+    "awayName": "Curacao",
+    "kickoffUtc": "2026-06-21T00:00:00.000Z"
+  },
+  {
+    "game": 36,
+    "home": "TUN",
+    "away": "JPN",
+    "homeName": "Tunisia",
+    "awayName": "Japan",
+    "kickoffUtc": "2026-06-21T04:00:00.000Z"
+  },
+  {
+    "game": 37,
+    "home": "ESP",
+    "away": "KSA",
+    "homeName": "Spain",
+    "awayName": "Saudi Arabia",
+    "kickoffUtc": "2026-06-21T16:00:00.000Z"
+  },
+  {
+    "game": 38,
+    "home": "BEL",
+    "away": "IRN",
+    "homeName": "Belgium",
+    "awayName": "Iran",
+    "kickoffUtc": "2026-06-21T19:00:00.000Z"
+  },
+  {
+    "game": 39,
+    "home": "URU",
+    "away": "CPV",
+    "homeName": "Uruguay",
+    "awayName": "Cape Verde",
+    "kickoffUtc": "2026-06-21T22:00:00.000Z"
+  },
+  {
+    "game": 40,
+    "home": "NZL",
+    "away": "EGY",
+    "homeName": "New Zealand",
+    "awayName": "Egypt",
+    "kickoffUtc": "2026-06-22T01:00:00.000Z"
+  },
+  {
+    "game": 41,
+    "home": "ARG",
+    "away": "AUT",
+    "homeName": "Argentina",
+    "awayName": "Austria",
+    "kickoffUtc": "2026-06-22T17:00:00.000Z"
+  },
+  {
+    "game": 42,
+    "home": "FRA",
+    "away": "IRQ",
+    "homeName": "France",
+    "awayName": "Iraq",
+    "kickoffUtc": "2026-06-22T21:00:00.000Z"
+  },
+  {
+    "game": 43,
+    "home": "NOR",
+    "away": "SEN",
+    "homeName": "Norway",
+    "awayName": "Senegal",
+    "kickoffUtc": "2026-06-23T00:00:00.000Z"
+  },
+  {
+    "game": 44,
+    "home": "JOR",
+    "away": "ALG",
+    "homeName": "Jordan",
+    "awayName": "Algeria",
+    "kickoffUtc": "2026-06-23T03:00:00.000Z"
+  },
+  {
+    "game": 45,
+    "home": "POR",
+    "away": "UZB",
+    "homeName": "Portugal",
+    "awayName": "Uzbekistan",
+    "kickoffUtc": "2026-06-23T17:00:00.000Z"
+  },
+  {
+    "game": 46,
+    "home": "ENG",
+    "away": "GHA",
+    "homeName": "England",
+    "awayName": "Ghana",
+    "kickoffUtc": "2026-06-23T20:00:00.000Z"
+  },
+  {
+    "game": 47,
+    "home": "PAN",
+    "away": "CRO",
+    "homeName": "Panama",
+    "awayName": "Croatia",
+    "kickoffUtc": "2026-06-23T23:00:00.000Z"
+  },
+  {
+    "game": 48,
+    "home": "COL",
+    "away": "DRC",
+    "homeName": "Colombia",
+    "awayName": "DR Congo",
+    "kickoffUtc": "2026-06-24T02:00:00.000Z"
+  },
+  {
+    "game": 49,
+    "home": "SUI",
+    "away": "CAN",
+    "homeName": "Switzerland",
+    "awayName": "Canada",
+    "kickoffUtc": "2026-06-24T19:00:00.000Z"
+  },
+  {
+    "game": 50,
+    "home": "BHI",
+    "away": "QAT",
+    "homeName": "Bosnia & Herzegovina",
+    "awayName": "Qatar",
+    "kickoffUtc": "2026-06-24T19:00:00.000Z"
+  },
+  {
+    "game": 51,
+    "home": "MOR",
+    "away": "HAI",
+    "homeName": "Morocco",
+    "awayName": "Haiti",
+    "kickoffUtc": "2026-06-24T22:00:00.000Z"
+  },
+  {
+    "game": 52,
+    "home": "SCO",
+    "away": "BRA",
+    "homeName": "Scotland",
+    "awayName": "Brazil",
+    "kickoffUtc": "2026-06-24T22:00:00.000Z"
+  },
+  {
+    "game": 53,
+    "home": "RSA",
+    "away": "KOR",
+    "homeName": "South Africa",
+    "awayName": "South Korea",
+    "kickoffUtc": "2026-06-25T01:00:00.000Z"
+  },
+  {
+    "game": 54,
+    "home": "CZE",
+    "away": "MEX",
+    "homeName": "Czech Republic",
+    "awayName": "Mexico",
+    "kickoffUtc": "2026-06-25T01:00:00.000Z"
+  },
+  {
+    "game": 55,
+    "home": "CUR",
+    "away": "CIV",
+    "homeName": "Curacao",
+    "awayName": "Ivory Coast",
+    "kickoffUtc": "2026-06-25T20:00:00.000Z"
+  },
+  {
+    "game": 56,
+    "home": "ECU",
+    "away": "GER",
+    "homeName": "Ecuador",
+    "awayName": "Germany",
+    "kickoffUtc": "2026-06-25T20:00:00.000Z"
+  },
+  {
+    "game": 57,
+    "home": "TUN",
+    "away": "NED",
+    "homeName": "Tunisia",
+    "awayName": "Netherlands",
+    "kickoffUtc": "2026-06-25T23:00:00.000Z"
+  },
+  {
+    "game": 58,
+    "home": "JPN",
+    "away": "SWE",
+    "homeName": "Japan",
+    "awayName": "Sweden",
+    "kickoffUtc": "2026-06-25T23:00:00.000Z"
+  },
+  {
+    "game": 59,
+    "home": "TUR",
+    "away": "USA",
+    "homeName": "Turkey",
+    "awayName": "USA",
+    "kickoffUtc": "2026-06-26T02:00:00.000Z"
+  },
+  {
+    "game": 60,
+    "home": "PAR",
+    "away": "AUS",
+    "homeName": "Paraguay",
+    "awayName": "Australia",
+    "kickoffUtc": "2026-06-26T02:00:00.000Z"
+  },
+  {
+    "game": 61,
+    "home": "NOR",
+    "away": "FRA",
+    "homeName": "Norway",
+    "awayName": "France",
+    "kickoffUtc": "2026-06-26T19:00:00.000Z"
+  },
+  {
+    "game": 62,
+    "home": "SEN",
+    "away": "IRQ",
+    "homeName": "Senegal",
+    "awayName": "Iraq",
+    "kickoffUtc": "2026-06-26T19:00:00.000Z"
+  },
+  {
+    "game": 63,
+    "home": "CPV",
+    "away": "KSA",
+    "homeName": "Cape Verde",
+    "awayName": "Saudi Arabia",
+    "kickoffUtc": "2026-06-27T00:00:00.000Z"
+  },
+  {
+    "game": 64,
+    "home": "URU",
+    "away": "ESP",
+    "homeName": "Uruguay",
+    "awayName": "Spain",
+    "kickoffUtc": "2026-06-27T00:00:00.000Z"
+  },
+  {
+    "game": 65,
+    "home": "NZL",
+    "away": "BEL",
+    "homeName": "New Zealand",
+    "awayName": "Belgium",
+    "kickoffUtc": "2026-06-27T03:00:00.000Z"
+  },
+  {
+    "game": 66,
+    "home": "EGY",
+    "away": "IRN",
+    "homeName": "Egypt",
+    "awayName": "Iran",
+    "kickoffUtc": "2026-06-27T03:00:00.000Z"
+  },
+  {
+    "game": 67,
+    "home": "PAN",
+    "away": "ENG",
+    "homeName": "Panama",
+    "awayName": "England",
+    "kickoffUtc": "2026-06-27T21:00:00.000Z"
+  },
+  {
+    "game": 68,
+    "home": "CRO",
+    "away": "GHA",
+    "homeName": "Croatia",
+    "awayName": "Ghana",
+    "kickoffUtc": "2026-06-27T21:00:00.000Z"
+  }
+]

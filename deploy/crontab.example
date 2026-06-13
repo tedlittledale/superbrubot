@@ -1,0 +1,8 @@
+# Superbru → Telegram scheduler.
+# Runs the tick every minute; the tick itself decides if anything is due and
+# only sends each match once (recorded in data/sent.json).
+#
+# Install with:  crontab deploy/crontab.example
+# (edit the path and node location first: `which node`)
+
+* * * * * cd /home/YOU/superbru && /usr/bin/node src/cli/tick.js >> data/tick.log 2>&1

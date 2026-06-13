@@ -1,0 +1,24 @@
+{
+  "name": "superbru-telegram",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Posts Superbru World Cup prediction updates to a Telegram group at each fixture deadline.",
+  "scripts": {
+    "start": "node src/worker.js",
+    "chatid": "node src/cli/chatId.js",
+    "test:telegram": "node src/cli/testTelegram.js",
+    "login": "node src/cli/login.js",
+    "dump:dashboard": "node src/cli/dumpDashboard.js",
+    "fixtures": "node scripts/buildFixtures.js",
+    "scrape": "node src/cli/scrape.js",
+    "tick": "node src/cli/tick.js",
+    "run": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

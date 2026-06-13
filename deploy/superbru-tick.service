@@ -1,0 +1,10 @@
+[Unit]
+Description=Superbru Telegram tick (scrape + send due fixtures)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/YOU/superbru
+ExecStart=/usr/bin/node src/cli/tick.js
+# Credentials come from .env in the working directory.

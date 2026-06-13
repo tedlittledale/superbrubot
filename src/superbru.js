@@ -1,0 +1,232 @@
+import { chromium } from "playwright";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { config } from "./config.js";
+
+const STATE_PATH = join(config.authDir, "state.json");
+const LOGIN_URL = "https://www.superbru.com/login";
+
+/**
+ * Dismiss the GDPR cookie-consent banner if present. The CMP renders either
+ * inline (#accept-btn "AGREE") or inside an iframe ("Consent" button), so we
+ * try the known id first, then any consent-style button across all frames.
+ */
+export async function acceptCookies(page) {
+  const tryClick = async (locator) => {
+    try {
+      if (await locator.first().isVisible({ timeout: 1500 })) {
+        await locator.first().click({ timeout: 2000 });
+        return true;
+      }
+    } catch {
+      /* not here — keep looking */
+    }
+    return false;
+  };
+
+  // 1. The inline button seen on the login page.
+  if (await tryClick(page.locator("#accept-btn"))) return;
+
+  // 2. A consent button by accessible name, in the main frame and any iframe.
+  const byName = (root) =>
+    root.getByRole("button", { name: /^(consent|agree|accept|i agree|accept all)/i });
+  if (await tryClick(byName(page))) return;
+  for (const frame of page.frames()) {
+    if (await tryClick(byName(frame))) return;
+  }
+}
+
+/** Log in via the Superbru tab and return once the dashboard has loaded. */
+async function login(page) {
+  await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded" });
+  await acceptCookies(page);
+
+  await page.fill("#email-superbru", config.superbruEmail);
+  await page.fill("#password-superbru", config.superbruPassword);
+
+  // Keep us logged in so the saved session lasts longer.
+  const remember = page.locator("#remember-superbru");
+  if (await remember.isVisible().catch(() => false)) {
+    if (!(await remember.isChecked())) await remember.check();
+  }
+
+  // The Superbru submit button is the one whose form holds #password-superbru.
+  const form = page.locator("#password-superbru").locator("xpath=ancestor::form");
+  await Promise.all([
+    page.waitForLoadState("networkidle"),
+    form.getByRole("button", { name: "Log in", exact: true }).click(),
+  ]);
+
+  if (!(await isLoggedIn(page))) {
+    throw new Error(
+      "Login failed — still seeing a logged-out page. Check SUPERBRU_EMAIL/PASSWORD in .env.",
+    );
+  }
+}
+
+/**
+ * True if the current page is in a logged-in state. Superbru serves a PUBLIC
+ * marketing version of dashboard.php when logged out (no redirect to /login),
+ * so we detect auth by content: a logged-out page shows "Create Account" /
+ * "Log in" links; a logged-in page exposes a logout link instead.
+ */
+async function isLoggedIn(page) {
+  if (!page.url().includes("/player/")) {
+    await page.goto(config.superbruPoolUrl, { waitUntil: "domcontentloaded" });
+  }
+  return page.evaluate(() => {
+    const hrefs = [...document.querySelectorAll("a[href]")].map((a) =>
+      (a.getAttribute("href") || "").toLowerCase(),
+    );
+    const loggedOut = hrefs.some(
+      (h) => h.includes("register.php") || h === "/login" || h.includes("/sign-up"),
+    );
+    const loggedIn = hrefs.some((h) => h.includes("logout"));
+    return loggedIn || !loggedOut;
+  });
+}
+
+const POOL_BASE = "https://www.superbru.com/worldcup_predictor";
+// Tournament id for the World Cup Predictor, taken from the pool_view links.
+const TOURNAMENT = 1296;
+
+/** Scrape the pool standings → [{ rank, player, points }]. */
+export async function scrapeLeaderboard(page, poolId) {
+  await page.goto(`${POOL_BASE}/pool.php?p=${poolId}&tab=leaderboard#tab=leaderboard`, {
+    waitUntil: "networkidle",
+  });
+  await page.waitForTimeout(1500);
+
+  return page.evaluate(() => {
+    const table = document.querySelector("table.mobile-leaderboard");
+    if (!table) return [];
+    return [...table.querySelectorAll("tbody tr")]
+      .filter((tr) => tr.querySelector(".user-name"))
+      .map((tr) => {
+        const cells = tr.querySelectorAll("td");
+        return {
+          rank: tr.querySelector(".rank")?.innerText.trim() || "",
+          player: tr.querySelector(".user-name")?.innerText.trim() || "",
+          points: cells[cells.length - 1]?.innerText.trim() || "",
+        };
+      });
+  });
+}
+
+/**
+ * Scrape every revealed match in a round → [{ home, away, score, picks: [...] }].
+ * `game` is the round's internal id (the `g` param). Picks are only present for
+ * matches whose deadline has passed.
+ */
+export async function scrapeRoundPicks(page, poolId, game) {
+  await page.goto(
+    `${POOL_BASE}/pool_view.php?t=${TOURNAMENT}&p=${poolId}&g=${game}&view=matches`,
+    { waitUntil: "networkidle" },
+  );
+  await page.waitForTimeout(2000);
+
+  return page.evaluate(() => {
+    // Each revealed match renders a block: a fixture header + a picks table.
+    // We pair each picks table with the nearest preceding fixture label.
+    const readPick = (tr) => {
+      const player = tr.querySelector(".app-user-name")?.innerText.trim();
+      if (!player) return null;
+      const pickCell = tr.querySelector(".td-pick");
+      const codes = [...(pickCell?.querySelectorAll(".team-code") || [])].map((e) =>
+        e.innerText.trim(),
+      );
+      const pts = [...(pickCell?.querySelectorAll(".score .pts") || [])].map((e) =>
+        e.innerText.trim(),
+      );
+      const prediction =
+        codes.length === 2 && pts.length === 2
+          ? `${codes[0]} ${pts[0]}-${pts[1]} ${codes[1]}`
+          : (pickCell?.innerText || "").replace(/\s+/g, " ").trim();
+      return {
+        player,
+        prediction,
+        points: tr.querySelector(".td-points")?.innerText.trim().replace(/\s+/g, " ") || "",
+      };
+    };
+
+    const matches = [...document.querySelectorAll("table")]
+      .filter((t) => t.querySelector(".td-pick"))
+      .map((table) => {
+        const picks = [...table.querySelectorAll("tr")].map(readPick).filter(Boolean);
+        // The fixture this table belongs to: the first pick row's team codes.
+        const firstPickCell = table.querySelector(".td-pick");
+        const codes = [...(firstPickCell?.querySelectorAll(".team-code") || [])].map((e) =>
+          e.innerText.trim(),
+        );
+        return { home: codes[0] || "", away: codes[1] || "", picks };
+      })
+      .filter((m) => m.picks.length);
+
+    // The page renders responsive (desktop + mobile) copies of each table —
+    // dedupe by fixture + pick count so each match appears once.
+    const seen = new Set();
+    return matches.filter((m) => {
+      const key = `${m.home}-${m.away}-${m.picks.length}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+}
+
+const isSameFixture = (m, home, away) =>
+  (m.home === home && m.away === away) || (m.home === away && m.away === home);
+
+/** A pick whose score is still hidden renders as "?-?" before the deadline. */
+export function picksRevealed(match) {
+  return match.picks.length > 0 && match.picks.some((p) => !p.prediction.includes("?"));
+}
+
+/**
+ * Find a specific match's picks by team code. `game` is the best-guess match
+ * number (pool_view `g`); we confirm by team code and probe nearby numbers to
+ * self-correct any drift (e.g. simultaneous kickoffs numbered in a different
+ * order than our schedule). Returns the match (possibly with hidden "?-?"
+ * picks if the deadline hasn't passed) or null if it can't be located.
+ */
+export async function findMatchPicks(page, poolId, game, home, away) {
+  const base = Number(game);
+  // Search outward from the best guess: base, base±1, base±2, base±3.
+  const candidates = [base, base + 1, base - 1, base + 2, base - 2, base + 3, base - 3];
+  for (const g of candidates) {
+    if (g < 1) continue;
+    const matches = await scrapeRoundPicks(page, poolId, String(g));
+    const hit = matches.find((m) => isSameFixture(m, home, away));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Run `fn(page)` with an authenticated page. Reuses a saved session when
+ * possible, otherwise logs in fresh and saves the session for next time.
+ */
+export async function withSession(fn, { headless = true } = {}) {
+  mkdirSync(config.authDir, { recursive: true });
+  const browser = await chromium.launch({ headless });
+  try {
+    const context = await browser.newContext(
+      existsSync(STATE_PATH) ? { storageState: STATE_PATH } : {},
+    );
+    const page = await context.newPage();
+
+    if (!(await isLoggedIn(page))) {
+      await login(page);
+    }
+
+    // Accept the cookie banner once on the dashboard (where it behaves), then
+    // persist the session — the consent cookie stops the modal reappearing on
+    // pool pages, where clicking it knocks us out of the pool context.
+    await acceptCookies(page);
+    await context.storageState({ path: STATE_PATH });
+
+    return await fn(page);
+  } finally {
+    await browser.close();
+  }
+}
