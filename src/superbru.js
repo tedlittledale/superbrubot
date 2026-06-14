@@ -92,6 +92,13 @@ async function login(page) {
   // The Superbru submit button is the one whose form holds #password-superbru.
   const form = page.locator("#password-superbru").locator("xpath=ancestor::form");
   const submit = form.getByRole("button", { name: "Log in", exact: true });
+  const settle = async () => {
+    // Wait for the redirect into the logged-in area to settle before verifying,
+    // so the verify step doesn't race the in-flight navigation (ERR_ABORTED).
+    await page.waitForURL(/\/player\//, { timeout: 15000 }).catch(() => {});
+    await page.waitForLoadState("networkidle").catch(() => {});
+  };
+
   try {
     await submit.click({ timeout: 10000 });
   } catch {
@@ -99,13 +106,22 @@ async function login(page) {
     // button (bypasses overlay hit-testing) rather than timing out for 30s.
     await submit.click({ force: true });
   }
-  // Wait for the redirect into the logged-in area to settle before verifying,
-  // so the verify step doesn't race the in-flight navigation (ERR_ABORTED).
-  await page.waitForURL(/\/player\//, { timeout: 20000 }).catch(() => {});
-  await page.waitForLoadState("networkidle").catch(() => {});
+  await settle();
+
+  // Fallback: if the button click didn't move us off /login, the site's submit
+  // handler may only fire on a real Enter-press in the password field. Try that
+  // before giving up (harmless if we've already navigated away).
+  if (page.url().includes("/login")) {
+    await page.locator("#password-superbru").press("Enter").catch(() => {});
+    await settle();
+  }
+
+  // Capture the post-submit state NOW, before the verify step re-navigates and
+  // wipes any inline credentials error off the login page.
+  const postSubmit = await loginDiagnostics(page);
 
   if (!(await isLoggedIn(page))) {
-    throw new Error(`Login failed — ${await loginDiagnostics(page)}`);
+    throw new Error(`Login failed — ${postSubmit}`);
   }
 }
 
@@ -131,10 +147,11 @@ async function loginDiagnostics(page) {
           .find((t) => /incorrect|invalid|wrong|try again|doesn't match|does not match/i.test(t)) ||
           "");
       const formStillShown = !!document.querySelector("#password-superbru");
-      if (err) return `Superbru says: "${err.slice(0, 200)}"`;
+      const here = location.href.replace(/^https?:\/\/(www\.)?superbru\.com/, "");
+      if (err) return `Superbru says: "${err.slice(0, 200)}" (at ${here})`;
       return formStillShown
-        ? `still on the login form (url ${location.href}). The "Log in" button click may not have submitted.`
-        : `ended on ${location.href} but not detected as logged in. Check SUPERBRU_EMAIL/PASSWORD.`;
+        ? `still on the login form (at ${here}) — submit didn't establish a session.`
+        : `ended at ${here} but not detected as logged in. Check SUPERBRU_EMAIL/PASSWORD.`;
     });
   } catch {
     return "still seeing a logged-out page. Check SUPERBRU_EMAIL/PASSWORD in .env.";
