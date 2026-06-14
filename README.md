@@ -63,6 +63,20 @@ every minute, so Railway just needs to run the container.
 
 No public networking / domain is needed — it's a background worker, not a web service.
 
+### Test the deploy without waiting for a match
+
+Set a **`SELFTEST`** variable, redeploy, then remove it:
+
+- `SELFTEST=1` — sends a plain Telegram ping (verifies the bot token + chat id; isolates
+  any `chat not found` problem from Superbru).
+- `SELFTEST=5` — also logs into Superbru and posts a **real** update for that match number
+  (5 = Qatar-Switzerland), verifying the whole pipeline end to end.
+
+Locally the same thing: `npm run selftest` or `npm run selftest 5`.
+
+> `chat not found` means `TELEGRAM_CHAT_ID` is wrong or the bot isn't in the group. Add the
+> bot to the group, post any message there, run `npm run chatid`, and use the negative id.
+
 > **No volume on this deploy.** State is in-memory, so the Dockerfile sets
 > `SEND_WINDOW_MINUTES=20` — a match is only eligible for 20 min after kickoff, so a
 > container restart more than 20 min later won't re-post it. If you'd rather persist

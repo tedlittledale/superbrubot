@@ -7,15 +7,18 @@ const STATE_PATH = join(config.authDir, "state.json");
 const LOGIN_URL = "https://www.superbru.com/login";
 
 /**
- * Dismiss the GDPR cookie-consent banner if present. The CMP renders either
- * inline (#accept-btn "AGREE") or inside an iframe ("Consent" button), so we
- * try the known id first, then any consent-style button across all frames.
+ * Dismiss the cookie-consent banner if present. On a fresh container the
+ * Quantcast CMP (#qc-cmp2-container) overlays the page and intercepts clicks,
+ * so this must succeed before any form interaction. We try, in order: the
+ * Quantcast "AGREE" button, a known inline button, and any consent-style
+ * button by name across the main frame and iframes — then wait for the overlay
+ * to actually disappear.
  */
 export async function acceptCookies(page) {
   const tryClick = async (locator) => {
     try {
       if (await locator.first().isVisible({ timeout: 1500 })) {
-        await locator.first().click({ timeout: 2000 });
+        await locator.first().click({ timeout: 3000 });
         return true;
       }
     } catch {
@@ -24,16 +27,33 @@ export async function acceptCookies(page) {
     return false;
   };
 
-  // 1. The inline button seen on the login page.
-  if (await tryClick(page.locator("#accept-btn"))) return;
-
-  // 2. A consent button by accessible name, in the main frame and any iframe.
   const byName = (root) =>
-    root.getByRole("button", { name: /^(consent|agree|accept|i agree|accept all)/i });
-  if (await tryClick(byName(page))) return;
-  for (const frame of page.frames()) {
-    if (await tryClick(byName(frame))) return;
+    root.getByRole("button", { name: /^(agree|i agree|accept all|accept|consent|got it)/i });
+
+  let clicked =
+    // Quantcast Choice CMP — the primary "AGREE" button.
+    (await tryClick(page.locator('.qc-cmp2-summary-buttons button[mode="primary"]'))) ||
+    (await tryClick(page.locator("#qc-cmp2-ui button").filter({ hasText: /agree|accept/i }))) ||
+    // The simpler inline banner.
+    (await tryClick(page.locator("#accept-btn"))) ||
+    // Generic, by accessible name.
+    (await tryClick(byName(page)));
+  if (!clicked) {
+    for (const frame of page.frames()) {
+      if (await tryClick(byName(frame))) {
+        clicked = true;
+        break;
+      }
+    }
   }
+
+  // Wait for the consent overlay to hide so it no longer intercepts clicks
+  // (Quantcast leaves the container in the DOM but sets it hidden).
+  await page
+    .locator("#qc-cmp2-container")
+    .waitFor({ state: "hidden", timeout: 5000 })
+    .catch(() => {});
+  return clicked;
 }
 
 /** Log in via the Superbru tab and return once the dashboard has loaded. */
@@ -43,19 +63,19 @@ async function login(page) {
 
   await page.fill("#email-superbru", config.superbruEmail);
   await page.fill("#password-superbru", config.superbruPassword);
+  // (We don't touch "remember me" — the session is persisted via storageState,
+  // and the checkbox sits under the consent overlay on fresh containers.)
 
-  // Keep us logged in so the saved session lasts longer.
-  const remember = page.locator("#remember-superbru");
-  if (await remember.isVisible().catch(() => false)) {
-    if (!(await remember.isChecked())) await remember.check();
-  }
+  // Consent can render late; make sure it's gone before the submit click.
+  await acceptCookies(page);
 
   // The Superbru submit button is the one whose form holds #password-superbru.
   const form = page.locator("#password-superbru").locator("xpath=ancestor::form");
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    form.getByRole("button", { name: "Log in", exact: true }).click(),
-  ]);
+  await form.getByRole("button", { name: "Log in", exact: true }).click();
+  // Wait for the redirect into the logged-in area to settle before verifying,
+  // so the verify step doesn't race the in-flight navigation (ERR_ABORTED).
+  await page.waitForURL(/\/player\//, { timeout: 20000 }).catch(() => {});
+  await page.waitForLoadState("networkidle").catch(() => {});
 
   if (!(await isLoggedIn(page))) {
     throw new Error(
@@ -72,7 +92,13 @@ async function login(page) {
  */
 async function isLoggedIn(page) {
   if (!page.url().includes("/player/")) {
-    await page.goto(config.superbruPoolUrl, { waitUntil: "domcontentloaded" });
+    // Tolerate an ERR_ABORTED if a prior navigation is still in flight.
+    try {
+      await page.goto(config.superbruPoolUrl, { waitUntil: "domcontentloaded" });
+    } catch {
+      await page.waitForTimeout(1000);
+      await page.goto(config.superbruPoolUrl, { waitUntil: "domcontentloaded" });
+    }
   }
   return page.evaluate(() => {
     const hrefs = [...document.querySelectorAll("a[href]")].map((a) =>

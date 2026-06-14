@@ -12,6 +12,7 @@
     "dump:dashboard": "node src/cli/dumpDashboard.js",
     "fixtures": "node scripts/buildFixtures.js",
     "scrape": "node src/cli/scrape.js",
+    "selftest": "node src/cli/selftest.js",
     "tick": "node src/cli/tick.js",
     "run": "node src/index.js"
   },
