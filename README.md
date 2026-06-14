@@ -96,6 +96,20 @@ Locally the same thing: `npm run selftest` (previous match), `npm run selftest p
 > state and use the longer default window, attach a volume at `/data` and set
 > `STATE_DIR=/data` (via ⌘K → "volume", or right-click the project canvas).
 
+### Persist the login session
+
+Logging in from Railway's datacenter IP is the flakiest step, so keep a session
+around instead of logging in every restart. Two ways:
+
+- **Volume (best):** mount a volume and set `STATE_DIR=/data` (as above). The
+  session lives in `/data/auth/state.json`, is reused, and self-refreshes.
+- **No volume:** run `npm run login` locally (uses your `.env` credentials) — it
+  logs in and prints a `SUPERBRU_STATE_B64=…` line. Set that as a Railway env var
+  and redeploy; the bot seeds its session from it on boot and never logs in from
+  the datacenter IP. Re-run `npm run login` to refresh it when the session
+  expires. (Use `npm run login -- --show` for a visible browser if a check
+  appears.)
+
 ## Deploy on a VPS
 
 ```bash

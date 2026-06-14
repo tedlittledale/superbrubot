@@ -1,10 +1,40 @@
 import { chromium } from "playwright";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "./config.js";
 
 const STATE_PATH = join(config.authDir, "state.json");
 const LOGIN_URL = "https://www.superbru.com/login";
+
+/**
+ * Make a persisted login session available before we launch the browser.
+ *
+ * Persistence has two supported homes:
+ *   1. A volume mounted at STATE_DIR — the session in auth/state.json simply
+ *      survives restarts (read + write). Nothing to seed; the file is there.
+ *   2. No volume (e.g. Railway free tier) — auth/state.json is wiped on every
+ *      restart, so a session can instead be injected via the SUPERBRU_STATE_B64
+ *      env var. Generate the value locally with `npm run login` and paste it into
+ *      Railway. On boot we materialise it to auth/state.json so the deployed bot
+ *      reuses your logged-in session instead of logging in from a datacenter IP.
+ *
+ * A real file always wins (option 1 takes precedence): if auth/state.json
+ * already exists we never overwrite it from the env var.
+ */
+function seedStateFromEnv() {
+  if (existsSync(STATE_PATH)) return;
+  const b64 = process.env.SUPERBRU_STATE_B64;
+  if (!b64) return;
+  try {
+    const json = Buffer.from(b64.trim(), "base64").toString("utf8");
+    JSON.parse(json); // validate it's real storageState JSON before writing
+    mkdirSync(config.authDir, { recursive: true });
+    writeFileSync(STATE_PATH, json);
+    console.log("session: seeded auth/state.json from SUPERBRU_STATE_B64.");
+  } catch (err) {
+    console.error("session: SUPERBRU_STATE_B64 is set but unusable —", err.message);
+  }
+}
 
 /**
  * Dismiss the cookie-consent banner if present. On a fresh container the
@@ -371,11 +401,20 @@ export async function findMatchPicks(page, poolId, game, home, away) {
  */
 export async function withSession(fn, { headless = true } = {}) {
   mkdirSync(config.authDir, { recursive: true });
+  seedStateFromEnv();
   const browser = await chromium.launch({ headless });
   try {
-    const context = await browser.newContext(
-      existsSync(STATE_PATH) ? { storageState: STATE_PATH } : {},
-    );
+    let context;
+    try {
+      context = await browser.newContext(
+        existsSync(STATE_PATH) ? { storageState: STATE_PATH } : {},
+      );
+    } catch (err) {
+      // Corrupt or incompatible state file — start clean and let login() rebuild
+      // it rather than crashing the whole run.
+      console.error("session: ignoring unusable auth/state.json —", err.message);
+      context = await browser.newContext();
+    }
     const page = await context.newPage();
 
     if (!(await isLoggedIn(page))) {
