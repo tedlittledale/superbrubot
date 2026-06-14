@@ -105,9 +105,39 @@ async function login(page) {
   await page.waitForLoadState("networkidle").catch(() => {});
 
   if (!(await isLoggedIn(page))) {
-    throw new Error(
-      "Login failed — still seeing a logged-out page. Check SUPERBRU_EMAIL/PASSWORD in .env.",
-    );
+    throw new Error(`Login failed — ${await loginDiagnostics(page)}`);
+  }
+}
+
+/**
+ * Best-effort explanation of why a login didn't take, for the error message.
+ * Superbru shows wrong credentials as an inline error on the same page, so we
+ * surface that text if present; otherwise we report where we ended up (URL +
+ * whether the login form is still on screen) so the failure is debuggable from
+ * Telegram without server access.
+ */
+async function loginDiagnostics(page) {
+  try {
+    return await page.evaluate(() => {
+      const text = (sel) =>
+        [...document.querySelectorAll(sel)]
+          .map((e) => (e.innerText || e.textContent || "").replace(/\s+/g, " ").trim())
+          .find((t) => t.length > 0) || "";
+      // Common spots Superbru renders a sign-in error.
+      const err =
+        text(".alert-danger, .error, .form-error, .login-error, [role='alert']") ||
+        ([...document.querySelectorAll("*")]
+          .map((e) => (e.childElementCount ? "" : (e.innerText || "").trim()))
+          .find((t) => /incorrect|invalid|wrong|try again|doesn't match|does not match/i.test(t)) ||
+          "");
+      const formStillShown = !!document.querySelector("#password-superbru");
+      if (err) return `Superbru says: "${err.slice(0, 200)}"`;
+      return formStillShown
+        ? `still on the login form (url ${location.href}). The "Log in" button click may not have submitted.`
+        : `ended on ${location.href} but not detected as logged in. Check SUPERBRU_EMAIL/PASSWORD.`;
+    });
+  } catch {
+    return "still seeing a logged-out page. Check SUPERBRU_EMAIL/PASSWORD in .env.";
   }
 }
 
