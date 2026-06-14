@@ -17,11 +17,17 @@ standings) to a Telegram group at each fixture's deadline.
 
 1. `data/fixtures.json` holds every group match with its **UTC kickoff** (built from the
    public schedule) and its Superbru **match number** (`g`).
-2. A **tick** (`src/cli/tick.js`) runs every minute on the VPS. It finds fixtures whose
-   kickoff has just passed and that haven't been announced, scrapes that match's
-   predictions + the standings, posts to Telegram, and records it in `data/sent.json`.
+2. A **tick** (`src/cli/tick.js`) runs every minute on the VPS. Each fixture gets **two**
+   announcements, recorded separately in `data/sent.json`:
+   - **Predictions** — at kickoff, once everyone's picks reveal: the predicted scores +
+     the current standings.
+   - **Result** — after full time, once the match is scored: the final score, **how
+     everyone fared** (each player's pick + the points they scored, best first), and the
+     **updated standings**.
 3. Predicted scores only reveal at kickoff (before that they show as `?-?`), so the tick
-   retries each minute until they appear — then sends once.
+   retries each minute until they appear — then sends once. The result message works the
+   same way: the tick starts checking `RESULT_OFFSET_MINUTES` (default 110) after kickoff
+   and retries until Superbru has graded the match, then sends once.
 
 ```bash
 node src/cli/tick.js --dry   # show what would be sent right now (no posting)
@@ -65,14 +71,21 @@ No public networking / domain is needed — it's a background worker, not a web 
 
 ### Test the deploy without waiting for a match
 
-Set a **`SELFTEST`** variable, redeploy, then remove it:
+Set a **`SELFTEST`** variable, redeploy, then remove it. The self-test always posts a
+plain Telegram ping first (verifies the bot token + chat id; isolates any `chat not
+found` problem from Superbru), then:
 
-- `SELFTEST=1` — sends a plain Telegram ping (verifies the bot token + chat id; isolates
-  any `chat not found` problem from Superbru).
-- `SELFTEST=5` — also logs into Superbru and posts a **real** update for that match number
-  (5 = Qatar-Switzerland), verifying the whole pipeline end to end.
+- `SELFTEST=1` — logs into Superbru and posts **both** live notifications for the
+  **previous match** (the most recently kicked-off fixture): the predictions message and
+  the result message. So every redeploy is a sense check of how both look on real data.
+- `SELFTEST=ping` — ping only; skips the Superbru scrape.
+- `SELFTEST=5` — same full check but for a specific match number (the pool_view `g`,
+  e.g. 5 = Qatar-Switzerland) instead of the previous match.
 
-Locally the same thing: `npm run selftest` or `npm run selftest 5`.
+Both Superbru messages are clearly prefixed `🧪 SELF-TEST … (not a live alert)`.
+
+Locally the same thing: `npm run selftest` (previous match), `npm run selftest ping`, or
+`npm run selftest 5`.
 
 > `chat not found` means `TELEGRAM_CHAT_ID` is wrong or the bot isn't in the group. Add the
 > bot to the group, post any message there, run `npm run chatid`, and use the negative id.

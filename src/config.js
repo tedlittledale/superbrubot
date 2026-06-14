@@ -80,4 +80,14 @@ export const config = {
   get sendWindowMinutes() {
     return Number(process.env.SEND_WINDOW_MINUTES || 120);
   },
+  // Results post a while after kickoff, once the match is over and graded. We
+  // start checking RESULT_OFFSET_MINUTES after kickoff and keep retrying (until
+  // the points are in) for RESULT_WINDOW_MINUTES — generous enough to cover
+  // stoppage/extra time and a late grading.
+  get resultOffsetMinutes() {
+    return Number(process.env.RESULT_OFFSET_MINUTES || 110);
+  },
+  get resultWindowMinutes() {
+    return Number(process.env.RESULT_WINDOW_MINUTES || 240);
+  },
 };
