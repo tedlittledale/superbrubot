@@ -53,6 +53,26 @@ export async function acceptCookies(page) {
     .locator("#qc-cmp2-container")
     .waitFor({ state: "hidden", timeout: 5000 })
     .catch(() => {});
+
+  // Last resort: on fresh containers the AGREE button is sometimes absent or
+  // buried in an iframe we can't click, so the overlay never goes away and
+  // intercepts the login click ("#qc-cmp2-container intercepts pointer events").
+  // If it's still in the way, strip the consent nodes out of the DOM and restore
+  // scrolling so the form underneath is clickable.
+  const stillBlocking = await page
+    .locator("#qc-cmp2-container")
+    .isVisible()
+    .catch(() => false);
+  if (stillBlocking) {
+    await page.evaluate(() => {
+      document
+        .querySelectorAll('#qc-cmp2-container, #qc-cmp2-ui, [class^="qc-cmp2"]')
+        .forEach((el) => el.remove());
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    });
+    clicked = true;
+  }
   return clicked;
 }
 
@@ -71,7 +91,14 @@ async function login(page) {
 
   // The Superbru submit button is the one whose form holds #password-superbru.
   const form = page.locator("#password-superbru").locator("xpath=ancestor::form");
-  await form.getByRole("button", { name: "Log in", exact: true }).click();
+  const submit = form.getByRole("button", { name: "Log in", exact: true });
+  try {
+    await submit.click({ timeout: 10000 });
+  } catch {
+    // If something is still intercepting the click, dispatch it straight to the
+    // button (bypasses overlay hit-testing) rather than timing out for 30s.
+    await submit.click({ force: true });
+  }
   // Wait for the redirect into the logged-in area to settle before verifying,
   // so the verify step doesn't race the in-flight navigation (ERR_ABORTED).
   await page.waitForURL(/\/player\//, { timeout: 20000 }).catch(() => {});
