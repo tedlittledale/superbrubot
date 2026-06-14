@@ -175,6 +175,24 @@ export async function scrapeRoundPicks(page, poolId, game) {
       };
     };
 
+    // Best-effort: pull the actual final score for a match from the fixture
+    // header near its picks table. Once played, Superbru shows it as e.g.
+    // "2 - 1"; before that there's nothing to find, so we return null and the
+    // message just omits the score line.
+    const findResult = (table) => {
+      let node = table;
+      for (let i = 0; i < 5 && node?.parentElement; i++) {
+        node = node.parentElement;
+        const el = node.querySelector(
+          ".result, .match-result, .fixture-result, .final-score, .score-result, .actual-result",
+        );
+        const txt = (el?.innerText || "").replace(/\s+/g, " ").trim();
+        const m = txt.match(/(\d+)\s*[-–:]\s*(\d+)/);
+        if (m) return `${m[1]}-${m[2]}`;
+      }
+      return null;
+    };
+
     const matches = [...document.querySelectorAll("table")]
       .filter((t) => t.querySelector(".td-pick"))
       .map((table) => {
@@ -184,7 +202,7 @@ export async function scrapeRoundPicks(page, poolId, game) {
         const codes = [...(firstPickCell?.querySelectorAll(".team-code") || [])].map((e) =>
           e.innerText.trim(),
         );
-        return { home: codes[0] || "", away: codes[1] || "", picks };
+        return { home: codes[0] || "", away: codes[1] || "", result: findResult(table), picks };
       })
       .filter((m) => m.picks.length);
 
@@ -206,6 +224,15 @@ const isSameFixture = (m, home, away) =>
 /** A pick whose score is still hidden renders as "?-?" before the deadline. */
 export function picksRevealed(match) {
   return match.picks.length > 0 && match.picks.some((p) => !p.prediction.includes("?"));
+}
+
+/**
+ * True once the match is over and scored: Superbru fills in each pick's points
+ * column (e.g. "9 pts") only after grading, so a points value containing a
+ * digit on any pick means the result is in. (Before that the column is blank.)
+ */
+export function resultGraded(match) {
+  return match.picks.length > 0 && match.picks.some((p) => /\d/.test(p.points || ""));
 }
 
 /**
