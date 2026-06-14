@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/worker.js",
     "chatid": "node src/cli/chatId.js",
+    "diagnose": "node src/cli/diagnose.js",
     "test:telegram": "node src/cli/testTelegram.js",
     "login": "node src/cli/login.js",
     "dump:dashboard": "node src/cli/dumpDashboard.js",

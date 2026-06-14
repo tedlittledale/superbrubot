@@ -40,3 +40,13 @@ export async function sendMessage(text, { chatId = config.telegramChatId } = {})
 export async function getUpdates() {
   return callApi("getUpdates", {});
 }
+
+/** Which bot does this token belong to? */
+export async function getMe() {
+  return callApi("getMe", {});
+}
+
+/** Look up a chat by id — fails with "chat not found" if the bot can't see it. */
+export async function getChat(chatId) {
+  return callApi("getChat", { chat_id: chatId });
+}
