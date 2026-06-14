@@ -121,8 +121,30 @@ async function login(page) {
   const postSubmit = await loginDiagnostics(page);
 
   if (!(await isLoggedIn(page))) {
-    throw new Error(`Login failed — ${postSubmit}`);
+    throw new Error(`Login failed — ${postSubmit} [${credFingerprint()}]`);
   }
+}
+
+/**
+ * Safe, non-secret fingerprint of the Superbru credentials, so a login failure
+ * can tell us whether the env vars actually arrived and arrived *clean*. We only
+ * expose lengths and a masked email — never the password — plus a warning if the
+ * value is wrapped in quotes or padded with whitespace (a common Railway paste
+ * mistake that types literal junk into the form and breaks an otherwise-correct
+ * login).
+ */
+function credFingerprint() {
+  const email = config.superbruEmail;
+  const pwd = config.superbruPassword;
+  const [user = "", domain = ""] = email.split("@");
+  const maskedEmail = `${user.slice(0, 1)}***${domain ? "@" + domain : ""}`;
+  const flags = [];
+  if (email !== email.trim()) flags.push("email has surrounding whitespace");
+  if (pwd !== pwd.trim()) flags.push("password has surrounding whitespace");
+  if (/^(["']).*\1$/.test(email)) flags.push("email wrapped in quotes");
+  if (/^(["']).*\1$/.test(pwd)) flags.push("password wrapped in quotes");
+  const base = `creds: ${maskedEmail}, email ${email.length} chars, pwd ${pwd.length} chars`;
+  return flags.length ? `${base} — ⚠️ ${flags.join("; ")}` : base;
 }
 
 /**
