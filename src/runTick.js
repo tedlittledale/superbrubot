@@ -5,6 +5,7 @@ import {
   findMatchPicks,
   picksRevealed,
   resultGraded,
+  matchIsLive,
 } from "./superbru.js";
 import { formatUpdate, formatResult } from "./format.js";
 import { sendMessage } from "./telegram.js";
@@ -47,10 +48,16 @@ export async function runTick({ dry = false } = {}) {
 
       let message;
       if (f.phase === "results") {
-        // Wait until the match is over and scored (points filled in); retry on
-        // the next tick until then (eligible until the result window closes).
-        if (!match || !resultGraded(match)) {
-          console.log(`  ${f.home}-${f.away}: result not in yet — will retry.`);
+        // Only post once the match has actually FINISHED and been scored. Points
+        // appear live (resultGraded goes true mid-game), so we also require the
+        // match not to be live — otherwise the score and standings are still
+        // provisional. Retry on the next tick until then (eligible until the
+        // result window closes).
+        if (!match || !resultGraded(match) || matchIsLive(match)) {
+          console.log(
+            `  ${f.home}-${f.away}: result not final yet ` +
+              `(graded=${!!match && resultGraded(match)}, status="${match?.status || ""}") — will retry.`,
+          );
           continue;
         }
         message = formatResult({
