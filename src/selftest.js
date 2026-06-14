@@ -6,7 +6,7 @@ import {
   findMatchPicks,
 } from "./superbru.js";
 import { formatUpdate, formatResult } from "./format.js";
-import { sendMessage } from "./telegram.js";
+import { sendMessage, escapeHtml } from "./telegram.js";
 import { loadFixtures } from "./schedule.js";
 
 const DASHBOARD_URL = "https://www.superbru.com/player/dashboard.php";
@@ -50,57 +50,71 @@ export async function selfTest(spec) {
 
   // 2. Full pipeline: login + scrape the chosen match + standings, then post
   //    BOTH the predictions and the results messages so each deploy shows how
-  //    both live notifications look on real data.
-  await withSession(async (page) => {
-    const leaderboard = await scrapeLeaderboard(page, config.poolId);
+  //    both live notifications look on real data. Any failure in here is
+  //    reported to Telegram (not just the logs) so a silent "only got the ping"
+  //    deploy tells you *why* the Superbru side fell over.
+  try {
+    await withSession(async (page) => {
+      await runSuperbruCheck(page, { useNumber, explicit });
+    });
+  } catch (err) {
+    await sendMessage(`⚠️ Self-test: Superbru step failed — ${escapeHtml(err.message)}`).catch(
+      () => {},
+    );
+    console.error("selftest: Superbru step failed:", err);
+    throw err;
+  }
+}
 
-    let match;
-    let fixture;
-    if (useNumber) {
-      match = (await scrapeRoundPicks(page, config.poolId, String(explicit)))[0];
-      fixture = match
-        ? { home: match.home, away: match.away, competition: "World Cup Predictor" }
-        : null;
-    } else {
-      const prev = previousFixture();
-      if (!prev) {
-        await sendMessage("⚠️ Self-test: no past fixture found to test with.");
-        console.log("selftest: no past fixture in data/fixtures.json.");
-        return;
-      }
-      match = await findMatchPicks(page, config.poolId, prev.game, prev.home, prev.away);
-      fixture = { home: prev.homeName, away: prev.awayName, competition: "World Cup Predictor" };
-    }
+async function runSuperbruCheck(page, { useNumber, explicit }) {
+  const leaderboard = await scrapeLeaderboard(page, config.poolId);
 
-    if (!match) {
-      await sendMessage(`⚠️ Self-test: couldn't find the test match${useNumber ? ` g=${explicit}` : ""}.`);
-      console.log("selftest: test match not found.");
+  let match;
+  let fixture;
+  if (useNumber) {
+    match = (await scrapeRoundPicks(page, config.poolId, String(explicit)))[0];
+    fixture = match
+      ? { home: match.home, away: match.away, competition: "World Cup Predictor" }
+      : null;
+  } else {
+    const prev = previousFixture();
+    if (!prev) {
+      await sendMessage("⚠️ Self-test: no past fixture found to test with.");
+      console.log("selftest: no past fixture in data/fixtures.json.");
       return;
     }
+    match = await findMatchPicks(page, config.poolId, prev.game, prev.home, prev.away);
+    fixture = { home: prev.homeName, away: prev.awayName, competition: "World Cup Predictor" };
+  }
 
-    const predictions =
-      "🧪 <b>SELF-TEST — predictions</b> (not a live alert)\n\n" +
-      formatUpdate({
-        fixture,
-        picks: match.picks,
-        standings: leaderboard,
-        dashboardUrl: DASHBOARD_URL,
-      });
-    const a = await sendMessage(predictions);
+  if (!match) {
+    await sendMessage(`⚠️ Self-test: couldn't find the test match${useNumber ? ` g=${explicit}` : ""}.`);
+    console.log("selftest: test match not found.");
+    return;
+  }
 
-    const results =
-      "🧪 <b>SELF-TEST — result</b> (not a live alert)\n\n" +
-      formatResult({
-        fixture,
-        result: match.result,
-        picks: match.picks,
-        standings: leaderboard,
-        dashboardUrl: DASHBOARD_URL,
-      });
-    const b = await sendMessage(results);
+  const predictions =
+    "🧪 <b>SELF-TEST — predictions</b> (not a live alert)\n\n" +
+    formatUpdate({
+      fixture,
+      picks: match.picks,
+      standings: leaderboard,
+      dashboardUrl: DASHBOARD_URL,
+    });
+  const a = await sendMessage(predictions);
 
-    console.log(
-      `selftest: full pipeline ok — sent predictions (${a.message_id}) + result (${b.message_id}).`,
-    );
-  });
+  const results =
+    "🧪 <b>SELF-TEST — result</b> (not a live alert)\n\n" +
+    formatResult({
+      fixture,
+      result: match.result,
+      picks: match.picks,
+      standings: leaderboard,
+      dashboardUrl: DASHBOARD_URL,
+    });
+  const b = await sendMessage(results);
+
+  console.log(
+    `selftest: full pipeline ok — sent predictions (${a.message_id}) + result (${b.message_id}).`,
+  );
 }
