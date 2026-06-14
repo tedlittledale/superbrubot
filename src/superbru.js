@@ -171,9 +171,23 @@ async function loginDiagnostics(page) {
       const formStillShown = !!document.querySelector("#password-superbru");
       const here = location.href.replace(/^https?:\/\/(www\.)?superbru\.com/, "");
       if (err) return `Superbru says: "${err.slice(0, 200)}" (at ${here})`;
+
+      // No known error element matched. Datacenter IPs (Railway) often hit a
+      // bot/CAPTCHA wall instead of a normal login, so look for that, then fall
+      // back to dumping what's actually on the page so we can read it remotely.
+      const html = document.documentElement.innerHTML.toLowerCase();
+      const captcha =
+        document.querySelector(
+          'iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], .g-recaptcha, .h-captcha, [class*="captcha"]',
+        ) || /captcha|are you a robot|verify you('?re| are) human|unusual traffic/i.test(html);
+      const visible = (document.body?.innerText || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 280);
+      const tag = captcha ? "CAPTCHA/bot-check detected — " : "";
       return formStillShown
-        ? `still on the login form (at ${here}) — submit didn't establish a session.`
-        : `ended at ${here} but not detected as logged in. Check SUPERBRU_EMAIL/PASSWORD.`;
+        ? `${tag}still on the login form (at ${here}). Page title: "${document.title}". Visible text: "${visible}"`
+        : `${tag}ended at ${here} (title "${document.title}"). Visible text: "${visible}"`;
     });
   } catch {
     return "still seeing a logged-out page. Check SUPERBRU_EMAIL/PASSWORD in .env.";
