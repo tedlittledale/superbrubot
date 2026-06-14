@@ -333,6 +333,23 @@ export async function scrapeRoundPicks(page, poolId, game) {
       return null;
     };
 
+    // Best-effort match status/clock text from the fixture header, so we don't
+    // post a "result" while the game is still live. Live blocks show a running
+    // clock ("67'") or "Half time"; finished blocks show "Full time"/"FT". We
+    // grab a short snippet and let the caller decide (in matchIsLive).
+    const findStatus = (table) => {
+      let node = table;
+      for (let i = 0; i < 6 && node?.parentElement; i++) {
+        node = node.parentElement;
+        const el = node.querySelector(
+          ".match-status, .fixture-status, .match-state, .game-status, .match-time, .minute, .clock, .live",
+        );
+        const t = (el?.innerText || "").replace(/\s+/g, " ").trim();
+        if (t) return t.slice(0, 80);
+      }
+      return "";
+    };
+
     const matches = [...document.querySelectorAll("table")]
       .filter((t) => t.querySelector(".td-pick"))
       .map((table) => {
@@ -342,7 +359,13 @@ export async function scrapeRoundPicks(page, poolId, game) {
         const codes = [...(firstPickCell?.querySelectorAll(".team-code") || [])].map((e) =>
           e.innerText.trim(),
         );
-        return { home: codes[0] || "", away: codes[1] || "", result: findResult(table), picks };
+        return {
+          home: codes[0] || "",
+          away: codes[1] || "",
+          result: findResult(table),
+          status: findStatus(table),
+          picks,
+        };
       })
       .filter((m) => m.picks.length);
 
@@ -367,12 +390,36 @@ export function picksRevealed(match) {
 }
 
 /**
- * True once the match is over and scored: Superbru fills in each pick's points
- * column (e.g. "9 pts") only after grading, so a points value containing a
- * digit on any pick means the result is in. (Before that the column is blank.)
+ * True once picks have been scored: Superbru fills in each pick's points column
+ * (e.g. "9 pts") once grading starts. NOTE this also goes true *during* a live
+ * match, because Superbru scores picks live — so it is necessary but not
+ * sufficient for a final result. Always pair it with !matchIsLive (see below).
  */
 export function resultGraded(match) {
   return match.picks.length > 0 && match.picks.some((p) => /\d/.test(p.points || ""));
+}
+
+/**
+ * True while the match is still in progress, so the score, points and standings
+ * are provisional and must not be posted as a "result" yet. We key off a live
+ * clock ("67'", "90+3'") or a half-time / extra-time / penalties marker — all of
+ * which disappear at full time. We deliberately do NOT treat a bare kickoff time
+ * or the word "live" as live, since those can linger in a finished fixture's
+ * header and would block the result forever. If no status was scraped, this is
+ * false and the time-based gate (resultOffsetMinutes) is the backstop.
+ */
+export function matchIsLive(match) {
+  const s = match.status || "";
+  // An explicit full-time marker always wins: even if a final minute lingers in
+  // the header (e.g. "90+5' Full time"), the match is over and safe to post.
+  if (/\bfull[\s-]?time\b|\bFT\b|\bfinished\b|\bfinal\b/i.test(s)) return false;
+  return (
+    /(^|\D)\d{1,3}\s*'/.test(s) || // running clock e.g. 67'
+    /\d{1,3}\+\d+\s*'/.test(s) || // stoppage clock e.g. 90+3'
+    /\bhalf[\s-]?time\b|\bHT\b/i.test(s) ||
+    /\bextra[\s-]?time\b|\bpenalt(y|ies)\b|\bshoot ?out\b/i.test(s) ||
+    /\bin progress\b/i.test(s)
+  );
 }
 
 /**

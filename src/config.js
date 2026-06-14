@@ -82,10 +82,13 @@ export const config = {
   },
   // Results post a while after kickoff, once the match is over and graded. We
   // start checking RESULT_OFFSET_MINUTES after kickoff and keep retrying (until
-  // the points are in) for RESULT_WINDOW_MINUTES — generous enough to cover
-  // stoppage/extra time and a late grading.
+  // the match is finished and scored) for RESULT_WINDOW_MINUTES. The live-status
+  // gate (matchIsLive) is what actually prevents posting mid-match; this offset
+  // is the backstop for when no status can be scraped, so it sits safely past a
+  // normal full-time + stoppage (~115 min). Knockout extra time is handled by
+  // the live-status gate, not this number.
   get resultOffsetMinutes() {
-    return Number(process.env.RESULT_OFFSET_MINUTES || 110);
+    return Number(process.env.RESULT_OFFSET_MINUTES || 120);
   },
   get resultWindowMinutes() {
     return Number(process.env.RESULT_WINDOW_MINUTES || 240);
