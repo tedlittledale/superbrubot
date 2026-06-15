@@ -20,6 +20,46 @@ export function fixtureKey(f, phase = "predictions") {
   return phase === "results" ? `${base}_result` : base;
 }
 
+/** The US calendar day (YYYY-MM-DD, in `tz`) a kickoff belongs to. */
+export function dayKeyOf(kickoffUtc, tz) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(kickoffUtc));
+}
+
+/** Stable key recording that a given day's end-of-day summary has been sent. */
+export function summaryKey(dayKey) {
+  return `daily_${dayKey}`;
+}
+
+/**
+ * Days whose end-of-day summary should be sent now: every fixture that day has
+ * already had its "results" announcement posted (results only post after full
+ * time, so this means the day is complete) and we haven't sent the summary yet.
+ * Fixtures are bucketed by their US calendar day in `tz`. Returns
+ * [{ day, fixtures }] with fixtures sorted by kickoff.
+ */
+export function dueDailySummaries(sent, { tz = "America/Los_Angeles" } = {}) {
+  const byDay = new Map();
+  for (const f of loadFixtures()) {
+    const day = dayKeyOf(f.kickoffUtc, tz);
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(f);
+  }
+
+  const due = [];
+  for (const [day, fixtures] of byDay) {
+    if (sent[summaryKey(day)]) continue;
+    if (!fixtures.every((f) => sent[fixtureKey(f, "results")])) continue;
+    fixtures.sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc));
+    due.push({ day, fixtures });
+  }
+  return due;
+}
+
 export function loadSent() {
   if (!existsSync(SENT)) return {};
   return JSON.parse(readFileSync(SENT, "utf8"));

@@ -24,10 +24,15 @@ standings) to a Telegram group at each fixture's deadline.
    - **Result** — after full time, once the match is scored: the final score, **how
      everyone fared** (each player's pick + the points they scored, best first), and the
      **updated standings**.
+   - **Day's summary** — once every match on a US calendar day has had its result posted:
+     **how many points everyone gained that day** (best first) + the standings. Days are
+     bucketed by `SUMMARY_TZ` (default Pacific, so the late game that finishes after
+     midnight UK still counts as the same US day); set `DAILY_SUMMARY=0` to turn it off.
 3. Predicted scores only reveal at kickoff (before that they show as `?-?`), so the tick
    retries each minute until they appear — then sends once. The result message works the
-   same way: the tick starts checking `RESULT_OFFSET_MINUTES` (default 110) after kickoff
-   and retries until Superbru has graded the match, then sends once.
+   same way: the tick starts checking `RESULT_OFFSET_MINUTES` (default 120) after kickoff,
+   and only sends once the match is **finished** (not just scored — Superbru scores picks
+   live, so it also waits for the live clock to clear) and graded.
 
 ```bash
 node src/cli/tick.js --dry   # show what would be sent right now (no posting)
