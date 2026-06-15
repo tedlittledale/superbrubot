@@ -40,8 +40,65 @@ export function formatUpdate({ fixture, picks = [], standings = [], dashboardUrl
   return lines.join("\n").trim();
 }
 
+/**
+ * Build the end-of-day summary: how many points each player gained across the
+ * day's matches (best first), followed by the current standings.
+ *
+ * @param {Object} data
+ * @param {string} data.day            day key, "YYYY-MM-DD"
+ * @param {Object} data.dailyPoints    { player: pointsGainedToday }
+ * @param {Array}  data.standings      [{ rank, player, points }]
+ * @param {string} [data.dashboardUrl] link back to Superbru
+ */
+export function formatDailySummary({ day, dailyPoints = {}, standings = [], dashboardUrl }) {
+  const lines = [];
+
+  lines.push(`📊 <b>Day's summary — ${escapeHtml(dayLabel(day))}</b>`);
+  lines.push("Points gained today:");
+  lines.push("");
+
+  const entries = Object.entries(dailyPoints).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    lines.push("No points recorded today.");
+  } else {
+    const best = entries[0][1];
+    for (const [player, pts] of entries) {
+      const trophy = best > 0 && pts === best ? " 🏆" : "";
+      lines.push(`• ${escapeHtml(player)}: <b>${pts} pts</b>${trophy}`);
+    }
+  }
+  lines.push("");
+
+  if (standings.length > 0) {
+    lines.push("<b>Standings</b>");
+    for (const s of standings) {
+      lines.push(
+        `${escapeHtml(String(s.rank))}. ${escapeHtml(s.player)} — ${escapeHtml(String(s.points))} pts`,
+      );
+    }
+    lines.push("");
+  }
+
+  if (dashboardUrl) lines.push(`<a href="${escapeHtml(dashboardUrl)}">Open dashboard</a>`);
+
+  return lines.join("\n").trim();
+}
+
+/** Render a YYYY-MM-DD day key as a readable label, e.g. "Saturday 14 June". */
+function dayLabel(dayKey) {
+  // Anchor at noon UTC so the weekday/day/month of the bare date don't drift.
+  const d = new Date(`${dayKey}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return dayKey;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(d);
+}
+
 /** Pull the leading number out of a points string like "9 pts" → 9 (0 if none). */
-function pointsValue(s) {
+export function pointsValue(s) {
   const m = String(s || "").match(/-?\d+/);
   return m ? Number(m[0]) : 0;
 }

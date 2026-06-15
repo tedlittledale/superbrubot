@@ -93,4 +93,15 @@ export const config = {
   get resultWindowMinutes() {
     return Number(process.env.RESULT_WINDOW_MINUTES || 240);
   },
+  // End-of-day summary: once every match on a given US calendar day has had its
+  // result posted, send a recap of the points everyone gained that day. The day
+  // is bucketed in this timezone — Pacific by default, so the late evening game
+  // (which finishes after midnight UK / Eastern) still counts as the same US day
+  // it belongs to. Set DAILY_SUMMARY=0 to turn the recap off.
+  get summaryTz() {
+    return process.env.SUMMARY_TZ || "America/Los_Angeles";
+  },
+  get dailySummaryEnabled() {
+    return process.env.DAILY_SUMMARY !== "0";
+  },
 };
