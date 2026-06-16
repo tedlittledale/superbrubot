@@ -14,6 +14,7 @@
     "fixtures": "node scripts/buildFixtures.js",
     "scrape": "node src/cli/scrape.js",
     "selftest": "node src/cli/selftest.js",
+    "summary": "node src/cli/summary.js",
     "tick": "node src/cli/tick.js",
     "run": "node src/index.js"
   },
