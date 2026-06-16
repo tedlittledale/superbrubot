@@ -37,9 +37,12 @@ export async function runTick({ dry = false } = {}) {
     resultOffsetMin: config.resultOffsetMinutes,
     resultWindowMin: config.resultWindowMinutes,
   });
-  const summariesDue = config.dailySummaryEnabled
-    ? dueDailySummaries(loadSent(), { tz: config.summaryTz })
-    : [];
+  const summaryOpts = {
+    tz: config.summaryTz,
+    now,
+    settleMs: config.summarySettleMinutes * 60_000,
+  };
+  const summariesDue = config.dailySummaryEnabled ? dueDailySummaries(loadSent(), summaryOpts) : [];
 
   if (due.length === 0 && summariesDue.length === 0) {
     console.log(`[${now.toISOString()}] nothing due.`);
@@ -103,11 +106,6 @@ export async function runTick({ dry = false } = {}) {
           messageId: result.message_id,
           match: `${f.home}-${f.away}`,
           phase: f.phase,
-          // Record per-player points on the result so the end-of-day summary can
-          // total them up without re-scraping each match.
-          ...(f.phase === "results"
-            ? { points: Object.fromEntries(match.picks.map((p) => [p.player, pointsValue(p.points)])) }
-            : {}),
         });
         console.log(`  ${f.home}-${f.away} (${f.phase}): sent (message ${result.message_id}).`);
       }
@@ -117,24 +115,25 @@ export async function runTick({ dry = false } = {}) {
     // the loop above can trigger its day's summary in this same tick.
     if (config.dailySummaryEnabled) {
       const sent = loadSent();
-      for (const { day, fixtures } of dueDailySummaries(sent, { tz: config.summaryTz })) {
+      for (const { day, fixtures } of dueDailySummaries(sent, summaryOpts)) {
+        // Re-scrape everything FRESH at summary time. We deliberately don't reuse
+        // the top-of-tick leaderboard or the points banked when each result was
+        // posted: those are snapshots from earlier in the day (and Superbru scores
+        // live, so they can be provisional). By now every match on the day is
+        // final, so a fresh read reflects the true end-of-day standings + totals.
+        const standings = await scrapeLeaderboard(page, config.poolId);
         const dailyPoints = {};
         for (const f of fixtures) {
-          let points = sent[fixtureKey(f, "results")]?.points;
-          if (!points) {
-            // Fallback for older result records that predate points-recording.
-            const m = await findMatchPicks(page, config.poolId, f.game, f.home, f.away);
-            points = m ? Object.fromEntries(m.picks.map((p) => [p.player, pointsValue(p.points)])) : {};
-          }
-          for (const [player, pts] of Object.entries(points)) {
-            dailyPoints[player] = (dailyPoints[player] || 0) + Number(pts || 0);
+          const m = await findMatchPicks(page, config.poolId, f.game, f.home, f.away);
+          for (const p of m?.picks || []) {
+            dailyPoints[p.player] = (dailyPoints[p.player] || 0) + pointsValue(p.points);
           }
         }
 
         const message = formatDailySummary({
           day,
           dailyPoints,
-          standings: leaderboard,
+          standings,
           dashboardUrl: DASHBOARD_URL,
         });
 

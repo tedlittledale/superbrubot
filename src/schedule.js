@@ -39,10 +39,12 @@ export function summaryKey(dayKey) {
  * Days whose end-of-day summary should be sent now: every fixture that day has
  * already had its "results" announcement posted (results only post after full
  * time, so this means the day is complete) and we haven't sent the summary yet.
- * Fixtures are bucketed by their US calendar day in `tz`. Returns
- * [{ day, fixtures }] with fixtures sorted by kickoff.
+ * Fixtures are bucketed by their US calendar day in `tz`. A `settleMs` grace
+ * period after the day's last result keeps the summary from reading the final
+ * standings before Superbru has settled them. Returns [{ day, fixtures }] with
+ * fixtures sorted by kickoff.
  */
-export function dueDailySummaries(sent, { tz = "America/Los_Angeles" } = {}) {
+export function dueDailySummaries(sent, { tz = "America/Los_Angeles", now = new Date(), settleMs = 0 } = {}) {
   const byDay = new Map();
   for (const f of loadFixtures()) {
     const day = dayKeyOf(f.kickoffUtc, tz);
@@ -53,7 +55,12 @@ export function dueDailySummaries(sent, { tz = "America/Los_Angeles" } = {}) {
   const due = [];
   for (const [day, fixtures] of byDay) {
     if (sent[summaryKey(day)]) continue;
-    if (!fixtures.every((f) => sent[fixtureKey(f, "results")])) continue;
+    const records = fixtures.map((f) => sent[fixtureKey(f, "results")]);
+    if (!records.every(Boolean)) continue;
+    if (settleMs > 0) {
+      const lastResultAt = Math.max(...records.map((r) => new Date(r.at).getTime() || 0));
+      if (now.getTime() - lastResultAt < settleMs) continue;
+    }
     fixtures.sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc));
     due.push({ day, fixtures });
   }

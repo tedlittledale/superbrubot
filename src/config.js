@@ -104,4 +104,9 @@ export const config = {
   get dailySummaryEnabled() {
     return process.env.DAILY_SUMMARY !== "0";
   },
+  // Wait this many minutes after the day's last result posts before sending the
+  // summary, so Superbru has finished settling the final standings we read.
+  get summarySettleMinutes() {
+    return Number(process.env.SUMMARY_SETTLE_MINUTES || 3);
+  },
 };
