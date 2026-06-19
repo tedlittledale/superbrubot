@@ -36,6 +36,15 @@ await withSession(async (page) => {
   await page.goto(`${config.superbruPoolUrl}#tab=results`, { waitUntil: "networkidle" });
   await page.waitForTimeout(2000);
   await capture(page, "results");
+
+  // Leaderboard page — to see how the OVERALL/tournament total is structured vs
+  // the per-round view (the standings scrape is currently reading the wrong one).
+  await page.goto(
+    `https://www.superbru.com/worldcup_predictor/pool.php?p=${config.poolId}&tab=leaderboard#tab=leaderboard`,
+    { waitUntil: "networkidle" },
+  );
+  await page.waitForTimeout(2000);
+  await capture(page, "leaderboard");
 }, { headless });
 
 console.log("\nDone. Files written to auth/. Share what you're comfortable with, or");
