@@ -442,6 +442,61 @@ export async function findMatchPicks(page, poolId, game, home, away) {
   return null;
 }
 
+/** Parse a points string ("9 pts", "1.5") to a number, keeping any decimal. */
+export function parsePoints(s) {
+  const m = String(s || "").match(/-?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : 0;
+}
+
+/**
+ * Compute standings ourselves by summing each player's points across the given
+ * fixtures, rather than scraping Superbru's leaderboard widget (which is fragile
+ * and can show a per-round view instead of the overall total). This uses the
+ * per-match pick points — the same data the per-match and daily messages rely on
+ * — as a single, self-correcting source of truth: every recompute reads the live
+ * site, so there is nothing stored to drift.
+ *
+ * Returns:
+ *   totals:  Map<player, number>                     overall points
+ *   byMatch: Map<"HOME-AWAY", Map<player, number>>   per-match breakdown
+ * Only matches that have been scored contribute; pass the fixtures to include
+ * (typically those already kicked off).
+ */
+export async function tallyPoints(page, poolId, fixtures) {
+  const totals = new Map();
+  const byMatch = new Map();
+  const games = [...new Set(fixtures.map((f) => String(f.game)))];
+  for (const g of games) {
+    const matches = await scrapeRoundPicks(page, poolId, g);
+    for (const m of matches) {
+      const key = `${m.home}-${m.away}`;
+      if (byMatch.has(key)) continue; // a match can surface under adjacent g's
+      const perPlayer = new Map();
+      for (const p of m.picks) {
+        const pts = parsePoints(p.points);
+        perPlayer.set(p.player, pts);
+        totals.set(p.player, (totals.get(p.player) || 0) + pts);
+      }
+      byMatch.set(key, perPlayer);
+    }
+  }
+  return { totals, byMatch };
+}
+
+/** Turn a totals map into ranked standings [{ rank, player, points }] (high→low,
+ *  standard competition ranking so ties share a rank). */
+export function rankStandings(totals) {
+  const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+  let prevPoints = null;
+  let prevRank = 0;
+  return sorted.map(([player, points], i) => {
+    const rank = points === prevPoints ? prevRank : i + 1;
+    prevPoints = points;
+    prevRank = rank;
+    return { rank, player, points };
+  });
+}
+
 /**
  * Run `fn(page)` with an authenticated page. Reuses a saved session when
  * possible, otherwise logs in fresh and saves the session for next time.
