@@ -33,6 +33,11 @@ standings) to a Telegram group at each fixture's deadline.
    same way: the tick starts checking `RESULT_OFFSET_MINUTES` (default 120) after kickoff,
    and only sends once the match is **finished** (not just scored — Superbru scores picks
    live, so it also waits for the live clock to clear) and graded.
+4. **Standings are computed by us**, by summing each player's per-match points across all
+   played fixtures — not scraped from Superbru's leaderboard widget, which is fragile and
+   can show a per-round total instead of the overall one. It's recomputed live each time
+   (nothing stored, so it can't drift). `VERIFY_STANDINGS=1` additionally reads Superbru's
+   leaderboard and logs any mismatch (once that scrape is calibrated to the overall total).
 
 ```bash
 node src/cli/tick.js --dry   # show what would be sent right now (no posting)

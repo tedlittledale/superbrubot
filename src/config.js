@@ -109,4 +109,10 @@ export const config = {
   get summarySettleMinutes() {
     return Number(process.env.SUMMARY_SETTLE_MINUTES || 3);
   },
+  // Cross-check our computed standings against Superbru's own leaderboard and log
+  // any mismatch. Off until that scrape is calibrated to the OVERALL total (see
+  // `npm run dump:dashboard`); enable with VERIFY_STANDINGS=1.
+  get verifyStandings() {
+    return process.env.VERIFY_STANDINGS === "1";
+  },
 };

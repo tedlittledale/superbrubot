@@ -97,9 +97,9 @@ function dayLabel(dayKey) {
   }).format(d);
 }
 
-/** Pull the leading number out of a points string like "9 pts" → 9 (0 if none). */
+/** Pull the leading number out of a points string like "9 pts" → 9, "1.5" → 1.5. */
 export function pointsValue(s) {
-  const m = String(s || "").match(/-?\d+/);
+  const m = String(s || "").match(/-?\d+(?:\.\d+)?/);
   return m ? Number(m[0]) : 0;
 }
 
