@@ -256,7 +256,8 @@ const POOL_BASE = "https://www.superbru.com/worldcup_predictor";
 // Tournament id for the World Cup Predictor, taken from the pool_view links.
 const TOURNAMENT = 1296;
 
-/** Scrape the pool standings → [{ rank, player, points }]. */
+/** Scrape the pool standings → [{ rank, player, points }] using Superbru's own
+ *  overall total (which includes bonus points our per-match sum can't see). */
 export async function scrapeLeaderboard(page, poolId) {
   await page.goto(`${POOL_BASE}/pool.php?p=${poolId}&tab=leaderboard#tab=leaderboard`, {
     waitUntil: "networkidle",
@@ -269,11 +270,28 @@ export async function scrapeLeaderboard(page, poolId) {
     return [...table.querySelectorAll("tbody tr")]
       .filter((tr) => tr.querySelector(".user-name"))
       .map((tr) => {
-        const cells = tr.querySelectorAll("td");
+        // The TOTAL is the largest number in the row: the leaderboard shows
+        // per-round columns plus the cumulative total, and total = sum of the
+        // rounds, so it's >= each of them. Taking the max (rather than the last
+        // cell) avoids grabbing a "this round" column that sits last on the
+        // mobile table — which previously made us report round points instead of
+        // the overall standing. Only pure-number cells count, so a username with
+        // digits (e.g. "rusty81") is never mistaken for a score.
+        let points = "";
+        let bestN = -Infinity;
+        for (const td of tr.querySelectorAll("td")) {
+          const t = td.innerText.trim();
+          if (!/^-?\d+(?:\.\d+)?$/.test(t)) continue;
+          const n = parseFloat(t);
+          if (n > bestN) {
+            bestN = n;
+            points = t;
+          }
+        }
         return {
           rank: tr.querySelector(".rank")?.innerText.trim() || "",
           player: tr.querySelector(".user-name")?.innerText.trim() || "",
-          points: cells[cells.length - 1]?.innerText.trim() || "",
+          points,
         };
       });
   });
@@ -446,55 +464,6 @@ export async function findMatchPicks(page, poolId, game, home, away) {
 export function parsePoints(s) {
   const m = String(s || "").match(/-?\d+(?:\.\d+)?/);
   return m ? Number(m[0]) : 0;
-}
-
-/**
- * Compute standings ourselves by summing each player's points across the given
- * fixtures, rather than scraping Superbru's leaderboard widget (which is fragile
- * and can show a per-round view instead of the overall total). This uses the
- * per-match pick points — the same data the per-match and daily messages rely on
- * — as a single, self-correcting source of truth: every recompute reads the live
- * site, so there is nothing stored to drift.
- *
- * Returns:
- *   totals:  Map<player, number>                     overall points
- *   byMatch: Map<"HOME-AWAY", Map<player, number>>   per-match breakdown
- * Only matches that have been scored contribute; pass the fixtures to include
- * (typically those already kicked off).
- */
-export async function tallyPoints(page, poolId, fixtures) {
-  const totals = new Map();
-  const byMatch = new Map();
-  const games = [...new Set(fixtures.map((f) => String(f.game)))];
-  for (const g of games) {
-    const matches = await scrapeRoundPicks(page, poolId, g);
-    for (const m of matches) {
-      const key = `${m.home}-${m.away}`;
-      if (byMatch.has(key)) continue; // a match can surface under adjacent g's
-      const perPlayer = new Map();
-      for (const p of m.picks) {
-        const pts = parsePoints(p.points);
-        perPlayer.set(p.player, pts);
-        totals.set(p.player, (totals.get(p.player) || 0) + pts);
-      }
-      byMatch.set(key, perPlayer);
-    }
-  }
-  return { totals, byMatch };
-}
-
-/** Turn a totals map into ranked standings [{ rank, player, points }] (high→low,
- *  standard competition ranking so ties share a rank). */
-export function rankStandings(totals) {
-  const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-  let prevPoints = null;
-  let prevRank = 0;
-  return sorted.map(([player, points], i) => {
-    const rank = points === prevPoints ? prevRank : i + 1;
-    prevPoints = points;
-    prevRank = rank;
-    return { rank, player, points };
-  });
 }
 
 /**

@@ -6,8 +6,6 @@ import {
   picksRevealed,
   resultGraded,
   matchIsLive,
-  tallyPoints,
-  rankStandings,
   parsePoints,
 } from "./superbru.js";
 import { formatUpdate, formatResult, formatDailySummary } from "./format.js";
@@ -15,7 +13,6 @@ import { sendMessage } from "./telegram.js";
 import {
   dueFixtures,
   dueDailySummaries,
-  loadFixtures,
   loadSent,
   markSent,
   fixtureKey,
@@ -23,24 +20,6 @@ import {
 } from "./schedule.js";
 
 const DASHBOARD_URL = "https://www.superbru.com/player/dashboard.php";
-
-/** Log-only cross-check: do our computed totals agree with Superbru's leaderboard? */
-async function verifyAgainstSuperbru(page, totals) {
-  try {
-    const official = await scrapeLeaderboard(page, config.poolId);
-    const off = new Map(official.map((s) => [s.player, parsePoints(s.points)]));
-    const diffs = [];
-    for (const [player, pts] of totals) {
-      const o = off.get(player);
-      if (o != null && Math.abs(o - pts) > 0.001) diffs.push(`${player}: ours ${pts} vs site ${o}`);
-    }
-    console[diffs.length ? "warn" : "log"](
-      diffs.length ? `standings verify: mismatch — ${diffs.join("; ")}` : "standings verify: matches Superbru.",
-    );
-  } catch (e) {
-    console.warn("standings verify: could not read Superbru leaderboard —", e.message);
-  }
-}
 
 /**
  * One scheduler pass. Each fixture is announced twice, once each:
@@ -50,9 +29,8 @@ async function verifyAgainstSuperbru(page, totals) {
  * Then, once every match on a US calendar day has had its result posted, an
  * end-of-day summary of the points everyone gained that day.
  *
- * Standings are computed by us (summing per-match points across all played
- * fixtures), not scraped from Superbru's leaderboard widget — see tallyPoints.
- * With { dry: true } it prints instead of posting.
+ * Standings come from Superbru's own leaderboard total (it includes bonus points
+ * that a per-match sum can't see). With { dry: true } it prints instead of posting.
  */
 export async function runTick({ dry = false } = {}) {
   const now = new Date();
@@ -80,23 +58,10 @@ export async function runTick({ dry = false } = {}) {
   );
 
   await withSession(async (page) => {
-    // Played fixtures (already kicked off) are the ones that can carry points.
-    const played = loadFixtures().filter((f) => new Date(f.kickoffUtc) <= now);
-
-    // Tally + standings are computed lazily and once per tick: only when we are
-    // actually about to send something that needs them (predictions/results
-    // retries that bail out early don't pay for it).
-    let tally;
+    // Standings are read once per tick, lazily — only when something is actually
+    // being sent (retry ticks that bail out early don't pay for it).
     let standings;
-    const getTally = async () => (tally ||= await tallyPoints(page, config.poolId, played));
-    const getStandings = async () => {
-      if (!standings) {
-        const { totals } = await getTally();
-        standings = rankStandings(totals);
-        if (config.verifyStandings) await verifyAgainstSuperbru(page, totals);
-      }
-      return standings;
-    };
+    const getStandings = async () => (standings ||= await scrapeLeaderboard(page, config.poolId));
 
     for (const f of due) {
       const match = await findMatchPicks(page, config.poolId, f.game, f.home, f.away);
@@ -157,23 +122,21 @@ export async function runTick({ dry = false } = {}) {
     if (config.dailySummaryEnabled) {
       const sent = loadSent();
       for (const { day, fixtures } of dueDailySummaries(sent, summaryOpts)) {
-        // Both the day's points and the standings come from the same computed
-        // tally, so they're consistent and reflect the live final state.
-        const { byMatch } = await getTally();
+        // Re-scrape fresh at summary time. Standings come from Superbru's total;
+        // the day's points are summed from each match's pick points.
+        const summaryStandings = await getStandings();
         const dailyPoints = {};
         for (const f of fixtures) {
-          const perPlayer = byMatch.get(`${f.home}-${f.away}`) || byMatch.get(`${f.away}-${f.home}`);
-          if (perPlayer) {
-            for (const [player, pts] of perPlayer) {
-              dailyPoints[player] = (dailyPoints[player] || 0) + pts;
-            }
+          const m = await findMatchPicks(page, config.poolId, f.game, f.home, f.away);
+          for (const p of m?.picks || []) {
+            dailyPoints[p.player] = (dailyPoints[p.player] || 0) + parsePoints(p.points);
           }
         }
 
         const message = formatDailySummary({
           day,
           dailyPoints,
-          standings: await getStandings(),
+          standings: summaryStandings,
           dashboardUrl: DASHBOARD_URL,
         });
 

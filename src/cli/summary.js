@@ -8,7 +8,7 @@
 // Needs the same .env as the worker (Superbru + Telegram). The day is bucketed
 // by SUMMARY_TZ (Pacific by default), matching the worker's grouping.
 import { config } from "../config.js";
-import { withSession, tallyPoints, rankStandings } from "../superbru.js";
+import { withSession, scrapeLeaderboard, findMatchPicks, parsePoints } from "../superbru.js";
 import { formatDailySummary } from "../format.js";
 import { sendMessage } from "../telegram.js";
 import { loadFixtures, dayKeyOf } from "../schedule.js";
@@ -36,24 +36,16 @@ if (fixtures.length === 0) {
   process.exit(1);
 }
 
-// Standings are computed through the end of the requested day: every match up to
-// and including that day that has already kicked off.
-const played = loadFixtures().filter(
-  (f) => dayKeyOf(f.kickoffUtc, tz) <= day && new Date(f.kickoffUtc) <= new Date(),
-);
-
 const { standings, dailyPoints } = await withSession(async (page) => {
-  const { totals, byMatch } = await tallyPoints(page, config.poolId, played);
+  const standings = await scrapeLeaderboard(page, config.poolId);
   const dailyPoints = {};
   for (const f of fixtures) {
-    const perPlayer = byMatch.get(`${f.home}-${f.away}`) || byMatch.get(`${f.away}-${f.home}`);
-    if (perPlayer) {
-      for (const [player, pts] of perPlayer) {
-        dailyPoints[player] = (dailyPoints[player] || 0) + pts;
-      }
+    const m = await findMatchPicks(page, config.poolId, f.game, f.home, f.away);
+    for (const p of m?.picks || []) {
+      dailyPoints[p.player] = (dailyPoints[p.player] || 0) + parsePoints(p.points);
     }
   }
-  return { standings: rankStandings(totals), dailyPoints };
+  return { standings, dailyPoints };
 });
 
 const message = formatDailySummary({ day, dailyPoints, standings, dashboardUrl: DASHBOARD_URL });
