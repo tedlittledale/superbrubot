@@ -443,19 +443,32 @@ export function matchIsLive(match) {
 /**
  * Find a specific match's picks by team code. `game` is the best-guess match
  * number (pool_view `g`); we confirm by team code and probe nearby numbers to
- * self-correct any drift (e.g. simultaneous kickoffs numbered in a different
- * order than our schedule). Returns the match (possibly with hidden "?-?"
- * picks if the deadline hasn't passed) or null if it can't be located.
+ * self-correct any drift. Knockout rounds can jump the numbering by more than
+ * the group stage drifted (a gap opens after the groups), so we scan a wider
+ * window biased forward (later rounds get higher g's). On a miss we log the
+ * matches we did see, so the real numbering is visible in the deploy logs.
+ * Returns the match (possibly with hidden "?-?" picks before the deadline) or
+ * null if it can't be located.
  */
 export async function findMatchPicks(page, poolId, game, home, away) {
   const base = Number(game);
-  // Search outward from the best guess: base, base±1, base±2, base±3.
-  const candidates = [base, base + 1, base - 1, base + 2, base - 2, base + 3, base - 3];
+  // base, then forward +1..+15, then back -1..-4 (forward-biased).
+  const candidates = [base];
+  for (let d = 1; d <= 15; d++) candidates.push(base + d);
+  for (let d = 1; d <= 4; d++) candidates.push(base - d);
+
+  const seen = [];
   for (const g of candidates) {
     if (g < 1) continue;
     const matches = await scrapeRoundPicks(page, poolId, String(g));
     const hit = matches.find((m) => isSameFixture(m, home, away));
     if (hit) return hit;
+    for (const m of matches) seen.push(`g${g}:${m.home}-${m.away}`);
+  }
+  if (seen.length) {
+    console.log(
+      `findMatchPicks: ${home}-${away} not found near g=${base}; saw ${[...new Set(seen)].slice(0, 25).join(", ")}`,
+    );
   }
   return null;
 }
