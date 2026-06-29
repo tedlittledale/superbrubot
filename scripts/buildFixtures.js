@@ -16,7 +16,8 @@ const CODE = {
   Mexico: "MEX", "South Africa": "RSA", "South Korea": "KOR",
   "Czech Republic": "CZE", Czechia: "CZE", Canada: "CAN",
   "Bosnia & Herzegovina": "BHI", "Bosnia and Herzegovina": "BHI",
-  USA: "USA", Paraguay: "PAR", Qatar: "QAT", Switzerland: "SUI",
+  "Bosnia-Herzegovina": "BHI",
+  USA: "USA", "United States": "USA", Paraguay: "PAR", Qatar: "QAT", Switzerland: "SUI",
   Brazil: "BRA", Morocco: "MOR", Haiti: "HAI", Scotland: "SCO",
   Australia: "AUS", Turkey: "TUR", Turkiye: "TUR", Germany: "GER",
   Curacao: "CUR", Netherlands: "NED", Japan: "JPN", "Ivory Coast": "CIV",
@@ -97,6 +98,22 @@ const SCHEDULE = `
 2026-06-27 | 04:00 | Egypt vs Iran
 2026-06-27 | 22:00 | Panama vs England
 2026-06-27 | 22:00 | Croatia vs Ghana
+2026-06-28 | 20:00 | South Africa vs Canada
+2026-06-29 | 18:00 | Brazil vs Japan
+2026-06-29 | 21:30 | Germany vs Paraguay
+2026-06-30 | 02:00 | Netherlands vs Morocco
+2026-06-30 | 18:00 | Ivory Coast vs Norway
+2026-06-30 | 22:00 | France vs Sweden
+2026-07-01 | 02:00 | Mexico vs Ecuador
+2026-07-01 | 17:00 | England vs DR Congo
+2026-07-01 | 21:00 | Belgium vs Senegal
+2026-07-02 | 01:00 | United States vs Bosnia-Herzegovina
+2026-07-02 | 20:00 | Spain vs Austria
+2026-07-03 | 00:00 | Portugal vs Croatia
+2026-07-03 | 04:00 | Switzerland vs Algeria
+2026-07-03 | 19:00 | Australia vs Egypt
+2026-07-03 | 23:00 | Argentina vs Cape Verde
+2026-07-04 | 02:30 | Colombia vs Ghana
 `.trim();
 
 const code = (name) => {

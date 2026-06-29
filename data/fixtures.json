@@ -510,5 +510,133 @@
     "homeName": "Croatia",
     "awayName": "Ghana",
     "kickoffUtc": "2026-06-27T21:00:00.000Z"
+  },
+  {
+    "game": 69,
+    "home": "RSA",
+    "away": "CAN",
+    "homeName": "South Africa",
+    "awayName": "Canada",
+    "kickoffUtc": "2026-06-28T19:00:00.000Z"
+  },
+  {
+    "game": 70,
+    "home": "BRA",
+    "away": "JPN",
+    "homeName": "Brazil",
+    "awayName": "Japan",
+    "kickoffUtc": "2026-06-29T17:00:00.000Z"
+  },
+  {
+    "game": 71,
+    "home": "GER",
+    "away": "PAR",
+    "homeName": "Germany",
+    "awayName": "Paraguay",
+    "kickoffUtc": "2026-06-29T20:30:00.000Z"
+  },
+  {
+    "game": 72,
+    "home": "NED",
+    "away": "MOR",
+    "homeName": "Netherlands",
+    "awayName": "Morocco",
+    "kickoffUtc": "2026-06-30T01:00:00.000Z"
+  },
+  {
+    "game": 73,
+    "home": "CIV",
+    "away": "NOR",
+    "homeName": "Ivory Coast",
+    "awayName": "Norway",
+    "kickoffUtc": "2026-06-30T17:00:00.000Z"
+  },
+  {
+    "game": 74,
+    "home": "FRA",
+    "away": "SWE",
+    "homeName": "France",
+    "awayName": "Sweden",
+    "kickoffUtc": "2026-06-30T21:00:00.000Z"
+  },
+  {
+    "game": 75,
+    "home": "MEX",
+    "away": "ECU",
+    "homeName": "Mexico",
+    "awayName": "Ecuador",
+    "kickoffUtc": "2026-07-01T01:00:00.000Z"
+  },
+  {
+    "game": 76,
+    "home": "ENG",
+    "away": "DRC",
+    "homeName": "England",
+    "awayName": "DR Congo",
+    "kickoffUtc": "2026-07-01T16:00:00.000Z"
+  },
+  {
+    "game": 77,
+    "home": "BEL",
+    "away": "SEN",
+    "homeName": "Belgium",
+    "awayName": "Senegal",
+    "kickoffUtc": "2026-07-01T20:00:00.000Z"
+  },
+  {
+    "game": 78,
+    "home": "USA",
+    "away": "BHI",
+    "homeName": "United States",
+    "awayName": "Bosnia-Herzegovina",
+    "kickoffUtc": "2026-07-02T00:00:00.000Z"
+  },
+  {
+    "game": 79,
+    "home": "ESP",
+    "away": "AUT",
+    "homeName": "Spain",
+    "awayName": "Austria",
+    "kickoffUtc": "2026-07-02T19:00:00.000Z"
+  },
+  {
+    "game": 80,
+    "home": "POR",
+    "away": "CRO",
+    "homeName": "Portugal",
+    "awayName": "Croatia",
+    "kickoffUtc": "2026-07-02T23:00:00.000Z"
+  },
+  {
+    "game": 81,
+    "home": "SUI",
+    "away": "ALG",
+    "homeName": "Switzerland",
+    "awayName": "Algeria",
+    "kickoffUtc": "2026-07-03T03:00:00.000Z"
+  },
+  {
+    "game": 82,
+    "home": "AUS",
+    "away": "EGY",
+    "homeName": "Australia",
+    "awayName": "Egypt",
+    "kickoffUtc": "2026-07-03T18:00:00.000Z"
+  },
+  {
+    "game": 83,
+    "home": "ARG",
+    "away": "CPV",
+    "homeName": "Argentina",
+    "awayName": "Cape Verde",
+    "kickoffUtc": "2026-07-03T22:00:00.000Z"
+  },
+  {
+    "game": 84,
+    "home": "COL",
+    "away": "GHA",
+    "homeName": "Colombia",
+    "awayName": "Ghana",
+    "kickoffUtc": "2026-07-04T01:30:00.000Z"
   }
 ]
