@@ -114,6 +114,11 @@ const SCHEDULE = `
 2026-07-03 | 19:00 | Australia vs Egypt
 2026-07-03 | 23:00 | Argentina vs Cape Verde
 2026-07-04 | 02:30 | Colombia vs Ghana
+# skip 4
+2026-07-06 | 20:00 | Portugal vs Spain
+2026-07-07 | 01:00 | USA vs Belgium
+2026-07-07 | 17:00 | Argentina vs Egypt
+2026-07-07 | 21:00 | Switzerland vs Colombia
 `.trim();
 
 const code = (name) => {
@@ -126,22 +131,35 @@ const code = (name) => {
 // The first fixture in this list (Qatar v Switzerland) is confirmed as g=5.
 const START_GAME = 5;
 
-const fixtures = SCHEDULE.split("\n").map((line, i) => {
-  const [date, time, teams] = line.split("|").map((s) => s.trim());
+// `game` is the best-guess match number; the scraper confirms by team code and
+// self-corrects nearby numbers, so exact ordering of simultaneous kickoffs is
+// harmless. A `# skip N` line advances the counter without emitting a fixture —
+// used to leave room for already-played games we don't list (e.g. the earlier
+// knockout ties in a round), so later games keep their real numbering.
+let g = START_GAME;
+const fixtures = [];
+for (const line of SCHEDULE.split("\n")) {
+  const trimmed = line.trim();
+  if (!trimmed) continue;
+  const skip = trimmed.match(/^#\s*skip\s+(\d+)/i);
+  if (skip) {
+    g += Number(skip[1]);
+    continue;
+  }
+  const [date, time, teams] = trimmed.split("|").map((s) => s.trim());
   const [home, away] = teams.split(" vs ");
   // Tag the UK time as BST (+01:00) → toISOString() yields the true UTC instant.
   const kickoffUtc = new Date(`${date}T${time}:00+01:00`).toISOString();
-  // `game` is the best-guess match number; the scraper confirms by team code
-  // and self-corrects, so exact ordering of simultaneous kickoffs is harmless.
-  return {
-    game: START_GAME + i,
+  fixtures.push({
+    game: g,
     home: code(home),
     away: code(away),
     homeName: home,
     awayName: away,
     kickoffUtc,
-  };
-});
+  });
+  g += 1;
+}
 
 mkdirSync(join(root, "data"), { recursive: true });
 writeFileSync(join(root, "data", "fixtures.json"), JSON.stringify(fixtures, null, 2));

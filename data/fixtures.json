@@ -638,5 +638,37 @@
     "homeName": "Colombia",
     "awayName": "Ghana",
     "kickoffUtc": "2026-07-04T01:30:00.000Z"
+  },
+  {
+    "game": 89,
+    "home": "POR",
+    "away": "ESP",
+    "homeName": "Portugal",
+    "awayName": "Spain",
+    "kickoffUtc": "2026-07-06T19:00:00.000Z"
+  },
+  {
+    "game": 90,
+    "home": "USA",
+    "away": "BEL",
+    "homeName": "USA",
+    "awayName": "Belgium",
+    "kickoffUtc": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "game": 91,
+    "home": "ARG",
+    "away": "EGY",
+    "homeName": "Argentina",
+    "awayName": "Egypt",
+    "kickoffUtc": "2026-07-07T16:00:00.000Z"
+  },
+  {
+    "game": 92,
+    "home": "SUI",
+    "away": "COL",
+    "homeName": "Switzerland",
+    "awayName": "Colombia",
+    "kickoffUtc": "2026-07-07T20:00:00.000Z"
   }
 ]
