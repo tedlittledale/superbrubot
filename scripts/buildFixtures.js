@@ -123,6 +123,8 @@ const SCHEDULE = `
 2026-07-10 | 20:00 | Spain vs Belgium
 2026-07-11 | 22:00 | Norway vs England
 2026-07-12 | 02:00 | Argentina vs Switzerland
+2026-07-14 | 20:00 | France vs Spain
+2026-07-15 | 20:00 | England vs Argentina
 `.trim();
 
 const code = (name) => {

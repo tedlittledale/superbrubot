@@ -702,5 +702,21 @@
     "homeName": "Argentina",
     "awayName": "Switzerland",
     "kickoffUtc": "2026-07-12T01:00:00.000Z"
+  },
+  {
+    "game": 97,
+    "home": "FRA",
+    "away": "ESP",
+    "homeName": "France",
+    "awayName": "Spain",
+    "kickoffUtc": "2026-07-14T19:00:00.000Z"
+  },
+  {
+    "game": 98,
+    "home": "ENG",
+    "away": "ARG",
+    "homeName": "England",
+    "awayName": "Argentina",
+    "kickoffUtc": "2026-07-15T19:00:00.000Z"
   }
 ]
